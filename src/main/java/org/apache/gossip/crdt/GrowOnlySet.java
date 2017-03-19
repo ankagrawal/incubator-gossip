@@ -27,12 +27,11 @@ import java.util.Set;
 public class GrowOnlySet<ElementType> implements CrdtSet<ElementType, Set<ElementType>, GrowOnlySet<ElementType>>{
 
   private final Set<ElementType> hidden = new LinkedHashSet<>();
-  
-  @SuppressWarnings("unused")
+ 
   /*
    * Used by SerDe
    */
-  private GrowOnlySet(){
+  protected GrowOnlySet(){
     
   }
   

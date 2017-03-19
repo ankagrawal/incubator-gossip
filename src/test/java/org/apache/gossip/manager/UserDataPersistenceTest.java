@@ -42,8 +42,8 @@ public class UserDataPersistenceTest {
             .gossipSettings(settings).build();
   }
   
-  @Test
-  public void givenThatRingIsPersisted() throws UnknownHostException, InterruptedException, URISyntaxException {
+  @Test 
+  public void givenThatRingIsPersisted() throws UnknownHostException, InterruptedException, URISyntaxException { 
     
     { //Create a gossip service and force it to persist its user data
       GossipManager gossipService = sameService();

@@ -84,7 +84,7 @@ public class OrSet<E>  implements Crdt<Set<E>, OrSet<E>> {
       return null;
     }
     Set<UUID> res = new HashSet<>(a);
-    res.addAll(b);
+    res.addAll(b); 
     return res;
   }
 

@@ -44,7 +44,7 @@ public class StandAloneDatacenterAndRack {
     s.setActiveGossipProperties(gossipProps);
     Map<String, String> props = new HashMap<>();
     props.put(DatacenterRackAwareActiveGossiper.DATACENTER, args[4]);
-    props.put(DatacenterRackAwareActiveGossiper.RACK, args[5]);
+    props.put(DatacenterRackAwareActiveGossiper.RACK, args[5]); 
     GossipManager manager = GossipManagerBuilder.newBuilder()
             .cluster("mycluster")
             .uri(URI.create(args[0]))
