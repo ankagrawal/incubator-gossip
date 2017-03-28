@@ -28,9 +28,9 @@ import org.apache.gossip.crdt.OrSet.Builder.Operation;
  */
 public class OrSet<E>  implements Crdt<Set<E>, OrSet<E>> {
   
-  private final Map<E, Set<UUID>> elements = new HashMap<>();
-  private final Map<E, Set<UUID>> tombstones = new HashMap<>();
-  private final transient Set<E> val;
+  protected final Map<E, Set<UUID>> elements = new HashMap<>();
+  protected final Map<E, Set<UUID>> tombstones = new HashMap<>();
+  protected  transient Set<E> val;
   
   public OrSet(){
     val = computeValue();
@@ -132,7 +132,7 @@ public class OrSet<E>  implements Crdt<Set<E>, OrSet<E>> {
   /*
    * Computes the live values by analyzing the elements and tombstones
    */
-  private Set<E> computeValue(){
+  protected Set<E> computeValue(){
     Set<E> values = new HashSet<>();
     for (Entry<E, Set<UUID>> entry: elements.entrySet()){
       Set<UUID> deleteIds = tombstones.get(entry.getKey());
@@ -184,6 +184,10 @@ public class OrSet<E>  implements Crdt<Set<E>, OrSet<E>> {
     public Builder<E> mutate(E element, Operation operation) {
       elements.add(new OrSetElement<E>(element, operation));
       return this;
+    }
+    
+    public int size(){
+      return elements.size();
     }
   }
 

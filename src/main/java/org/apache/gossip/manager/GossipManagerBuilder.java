@@ -19,6 +19,7 @@ package org.apache.gossip.manager;
 
 import com.codahale.metrics.MetricRegistry;
 import com.fasterxml.jackson.core.JsonGenerator.Feature;
+import com.fasterxml.jackson.databind.InjectableValues;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.gossip.Member;
 import org.apache.gossip.GossipSettings;
@@ -27,6 +28,7 @@ import org.apache.gossip.crdt.CrdtModule;
 import org.apache.gossip.event.GossipListener;
 import org.apache.gossip.manager.handlers.DefaultMessageInvoker;
 import org.apache.gossip.manager.handlers.MessageInvoker;
+import org.apache.gossip.voting.VotingContext;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -145,7 +147,13 @@ public class GossipManagerBuilder {
       if (messageInvoker == null) {
         messageInvoker = new DefaultMessageInvoker();
       } 
-      return new GossipManager(cluster, uri, id, properties, settings, gossipMembers, listener, registry, objectMapper, messageInvoker) {} ;
+      GossipManager man = new GossipManager(cluster, uri, id, properties, settings, gossipMembers, 
+              listener, registry, objectMapper, messageInvoker) {} ;
+      VotingContext votingContext = new VotingContext(man);
+      InjectableValues.Std injectableValues = new InjectableValues.Std();
+      injectableValues.addValue(VotingContext.class, votingContext);
+      objectMapper.setInjectableValues(injectableValues);
+      return man;
     }
   }
 

@@ -28,11 +28,13 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.gossip.crdt.GrowOnlyCounter;
 import org.apache.gossip.crdt.GrowOnlySet;
+import org.apache.gossip.crdt.MajorityVote;
 import org.apache.gossip.crdt.OrSet;
 import org.apache.gossip.manager.GossipManager;
 import org.apache.gossip.manager.GossipManagerBuilder;
 import org.apache.gossip.model.PerNodeDataMessage;
 import org.apache.gossip.model.SharedDataMessage;
+import org.apache.gossip.voting.Vote;
 import org.junit.Test;
 
 import io.teknek.tunit.TUnit;
@@ -41,6 +43,7 @@ public class DataTest extends AbstractIntegrationBase {
   
   private String orSetKey = "cror";
   private String gCounterKey = "crdtgc";
+  private String voteKey = "vote";
   
   @Test
   public void dataTest() throws InterruptedException, UnknownHostException, URISyntaxException{
@@ -106,9 +109,37 @@ public class DataTest extends AbstractIntegrationBase {
     givenIncreaseOther(clients);
     assertThatCountIsUpdated(clients, 7);
 
+    givenVote(clients);
+    assertVotte(clients);
+    
     for (int i = 0; i < clusterMembers; ++i) {
       clients.get(i).shutdown();
     }
+  }
+  
+  private void givenVote(final List<GossipManager> clients){
+    Vote<String> v = new Vote<String>();
+    v.setVote("vote for x");
+    v.setVoterId(clients.get(0).getMyself().getId());
+    MajorityVote<String> vt = new MajorityVote<String>(new OrSet.Builder<Vote<String>>().add(v));  
+    SharedDataMessage d = new SharedDataMessage();
+    d.setKey(voteKey);
+    d.setPayload(vt);
+    d.setExpireAt(Long.MAX_VALUE);
+    d.setTimestamp(System.currentTimeMillis());
+    clients.get(0).merge(d);
+  }
+  
+  private void assertVotte(final List<GossipManager> clients){
+    
+    Vote<String> v = new Vote<String>();
+    v.setVote("vote for d");
+    v.setVoterId(clients.get(0).getMyself().getId() + "1");
+    TUnit.assertThat(() ->  {
+      //System.out.println(clients.get(0).findCrdt(voteKey));
+      //System.out.println(clients.get(1).findCrdt(voteKey));
+      return clients.get(0).findCrdt(voteKey);
+    }).afterWaitingAtMost(10, TimeUnit.SECONDS).isEqualTo(new MajorityVote<String>());
   }
   
   private void givenDifferentIncrement(final List<GossipManager> clients) {

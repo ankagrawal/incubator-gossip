@@ -26,7 +26,7 @@ import java.util.Set;
 
 public class GrowOnlySet<ElementType> implements CrdtSet<ElementType, Set<ElementType>, GrowOnlySet<ElementType>>{
 
-  private final Set<ElementType> hidden = new LinkedHashSet<>();
+  protected final Set<ElementType> hidden = new LinkedHashSet<>();
  
   /*
    * Used by SerDe
@@ -150,7 +150,7 @@ public class GrowOnlySet<ElementType> implements CrdtSet<ElementType, Set<Elemen
     return true;
   }
 
-  Set<ElementType> getElements(){
+  public Set<ElementType> getElements(){
     return hidden;
   }
 }

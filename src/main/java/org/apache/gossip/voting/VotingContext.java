@@ -9,5 +9,10 @@ public class VotingContext {
   public VotingContext(GossipManager manager){
     parent = manager;
   }
+
+  public GossipManager getParent() {
+    return parent;
+  }
+  
   
 }

@@ -1,5 +1,8 @@
 package org.apache.gossip.voting;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+
+@JsonTypeInfo(use=JsonTypeInfo.Id.NAME, include=JsonTypeInfo.As.WRAPPER_OBJECT, property="type")
 public class Vote<E> {
 
   private String voterId;
@@ -49,6 +52,11 @@ public class Vote<E> {
     } else if (!voterId.equals(other.voterId))
       return false;
     return true;
+  }
+
+  @Override
+  public String toString() {
+    return "Vote [voterId=" + voterId + ", vote=" + vote + "]";
   }
  
 }

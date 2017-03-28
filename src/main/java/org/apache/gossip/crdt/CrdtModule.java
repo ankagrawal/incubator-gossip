@@ -17,13 +17,20 @@
  */
 package org.apache.gossip.crdt;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import org.apache.gossip.model.Pair;
+import org.apache.gossip.voting.Vote;
+import org.apache.gossip.voting.VotingContext;
+
+import com.fasterxml.jackson.annotation.JacksonInject;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 
@@ -35,10 +42,23 @@ abstract class OrSetMixin<E> {
   @JsonIgnore abstract boolean isEmpty();
 }
 
-abstract class GrowOnlySetMixin<E>{
+abstract class GrowOnlySetMixin<E> {
   @JsonCreator
   GrowOnlySetMixin(@JsonProperty("elements") Set<E> elements){ }
   @JsonProperty("elements") abstract Set<E> getElements();
+  @JsonIgnore abstract boolean isEmpty();
+}
+
+
+abstract class MajorityVoteMixin<E> {
+  @JsonCreator
+  MajorityVoteMixin(@JacksonInject final VotingContext votingContext, 
+          @JsonProperty("el") List<Pair<Vote<E>,List<UUID>>> elements, 
+          @JsonProperty("to") List<Pair<Vote<E>,List<UUID>>> tombstones){ }
+  @JsonProperty("el") abstract List<Pair<Vote<E>,List<UUID>>> getEl();
+  @JsonProperty("to") abstract List<Pair<Vote<E>,List<UUID>>> geTo();
+  @JsonIgnore abstract Map<E, Set<UUID>> getElements();
+  @JsonIgnore abstract Map<E, Set<UUID>> getTombstones();
   @JsonIgnore abstract boolean isEmpty();
 }
 
@@ -63,6 +83,8 @@ public class CrdtModule extends SimpleModule {
     context.setMixInAnnotations(OrSet.class, OrSetMixin.class);
     context.setMixInAnnotations(GrowOnlySet.class, GrowOnlySetMixin.class);
     context.setMixInAnnotations(GrowOnlyCounter.class, GrowOnlyCounterMixin.class);
+    context.setMixInAnnotations(MajorityVote.class, MajorityVoteMixin.class);
+    
   }
 
 }
