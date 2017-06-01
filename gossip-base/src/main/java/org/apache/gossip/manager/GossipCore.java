@@ -20,17 +20,23 @@ package org.apache.gossip.manager;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
-import org.apache.gossip.Member;
 import org.apache.gossip.LocalMember;
+import org.apache.gossip.Member;
 import org.apache.gossip.RemoteMember;
 import org.apache.gossip.crdt.Crdt;
 import org.apache.gossip.event.GossipState;
-import org.apache.gossip.model.*;
+import org.apache.gossip.event.data.UpdateNodeDataEventHandler;
+import org.apache.gossip.event.data.UpdateSharedDataEventHandler;
+import org.apache.gossip.model.Base;
+import org.apache.gossip.model.PerNodeDataMessage;
+import org.apache.gossip.model.Response;
+import org.apache.gossip.model.SharedDataMessage;
 import org.apache.gossip.udp.Trackable;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.*;
@@ -55,13 +61,16 @@ public class GossipCore implements GossipCoreConstants {
   private final Meter messageSerdeException;
   private final Meter tranmissionException;
   private final Meter tranmissionSuccess;
-
+  private final List<UpdateNodeDataEventHandler> nodeDataHandlers;
+  private final List<UpdateSharedDataEventHandler> sharedDataHandlers;
   public GossipCore(GossipManager manager, MetricRegistry metrics){
     this.gossipManager = manager;
     requests = new ConcurrentHashMap<>();
     workQueue = new ArrayBlockingQueue<>(1024);
     perNodeData = new ConcurrentHashMap<>();
     sharedData = new ConcurrentHashMap<>();
+    nodeDataHandlers = new ArrayList<>();   // TODO: 5/30/17 check for concurrency issues
+    sharedDataHandlers = new ArrayList<>();
     metrics.register(WORKQUEUE_SIZE, (Gauge<Integer>)() -> workQueue.size());
     metrics.register(PER_NODE_DATA_SIZE, (Gauge<Integer>)() -> perNodeData.size());
     metrics.register(SHARED_DATA_SIZE, (Gauge<Integer>)() ->  sharedData.size());
@@ -111,10 +120,22 @@ public class GossipCore implements GossipCoreConstants {
       PerNodeDataMessage current = nodeMap.get(message.getKey());
       if (current == null){
         nodeMap.putIfAbsent(message.getKey(), message);
+        notifyPerNodeData(message,null);
       } else {
         if (current.getTimestamp() < message.getTimestamp()){
           nodeMap.replace(message.getKey(), current, message);
+          notifyPerNodeData(message,current.getPayload());
         }
+      }
+    } else {
+      notifyPerNodeData(message,null);
+    }
+  }
+  
+  private void notifyPerNodeData(PerNodeDataMessage newMessage, Object oldValue){
+    for (UpdateNodeDataEventHandler handler : nodeDataHandlers) {
+      if (handler.getNodeDataListeningKeys().contains(newMessage.getKey())) {
+        handler.onUpdate(newMessage.getNodeId(), newMessage.getKey(), oldValue, newMessage.getPayload());
       }
     }
   }
@@ -296,5 +317,21 @@ public class GossipCore implements GossipCoreConstants {
         return merged;
       }
     }
+  }
+  
+  public void registerPerNodeDataSubscriber(UpdateNodeDataEventHandler handler){
+    nodeDataHandlers.add(handler);
+  }
+  
+  public void registerSharedDataSubscriber(UpdateSharedDataEventHandler handler){
+    sharedDataHandlers.add(handler);
+  }
+  
+  public void unregisterPerNodeDataSubscriber(UpdateNodeDataEventHandler handler){
+    nodeDataHandlers.remove(handler);
+  }
+  
+  public void unregisterSharedDataSubscriber(UpdateSharedDataEventHandler handler){
+    sharedDataHandlers.remove(handler);
   }
 }
