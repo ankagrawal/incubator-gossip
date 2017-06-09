@@ -19,7 +19,31 @@ package org.apache.gossip.event.data;
 
 import java.util.List;
 
+/**
+ * Event handler interface for the per node data items.
+ * Classes which implement this interface get notifications when per node data item get changed
+ * based on the key list that class defined.
+ */
 public interface UpdateNodeDataEventHandler {
-  void onUpdate(String nodeId, String key, Object oldValue,Object newValue);
+  
+  /**
+   * This method get called when a per node datum get changed.
+   *
+   * @param nodeId   id of the node that change the value
+   * @param key      key of the datum
+   * @param oldValue previous value of the datum or null if the datum is discovered
+   *                 for the first time
+   * @param newValue updated value of the datum
+   */
+  void onUpdate(String nodeId, String key, Object oldValue, Object newValue);
+  
+  /**
+   * This method get called to retrieve the key list that implemented class should interested in.
+   * The implemented class only get notifications for the key list returned by this method.
+   *
+   * @return interested list of per node data keys that the implementation class will like
+   * to get notified
+   */
   List<String> getNodeDataListeningKeys();
+  
 }

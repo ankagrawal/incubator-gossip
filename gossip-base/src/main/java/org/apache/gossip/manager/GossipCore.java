@@ -36,7 +36,6 @@ import org.apache.log4j.Logger;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.*;
@@ -61,16 +60,21 @@ public class GossipCore implements GossipCoreConstants {
   private final Meter messageSerdeException;
   private final Meter tranmissionException;
   private final Meter tranmissionSuccess;
-  private final List<UpdateNodeDataEventHandler> nodeDataHandlers;
+  private final List<UpdateNodeDataEventHandler> perNodeDataHandlers;
+  private final ExecutorService perNodeDataEventExecutor;
   private final List<UpdateSharedDataEventHandler> sharedDataHandlers;
+  private final ExecutorService sharedDataEventExecutor;
+  
   public GossipCore(GossipManager manager, MetricRegistry metrics){
     this.gossipManager = manager;
     requests = new ConcurrentHashMap<>();
     workQueue = new ArrayBlockingQueue<>(1024);
     perNodeData = new ConcurrentHashMap<>();
     sharedData = new ConcurrentHashMap<>();
-    nodeDataHandlers = new ArrayList<>();   // TODO: 5/30/17 check for concurrency issues
-    sharedDataHandlers = new ArrayList<>();
+    perNodeDataHandlers = new CopyOnWriteArrayList<>();
+    sharedDataHandlers = new CopyOnWriteArrayList<>();
+    perNodeDataEventExecutor = Executors.newCachedThreadPool();
+    sharedDataEventExecutor = Executors.newCachedThreadPool();
     metrics.register(WORKQUEUE_SIZE, (Gauge<Integer>)() -> workQueue.size());
     metrics.register(PER_NODE_DATA_SIZE, (Gauge<Integer>)() -> perNodeData.size());
     metrics.register(SHARED_DATA_SIZE, (Gauge<Integer>)() ->  sharedData.size());
@@ -85,6 +89,7 @@ public class GossipCore implements GossipCoreConstants {
     while (true){
       SharedDataMessage previous = sharedData.putIfAbsent(message.getKey(), message);
       if (previous == null){
+        notifySharedData(message.getKey(), message.getPayload(), null);
         return;
       }
       if (message.getPayload() instanceof Crdt){
@@ -103,6 +108,7 @@ public class GossipCore implements GossipCoreConstants {
         if (previous.getTimestamp() < message.getTimestamp()){
           boolean result = sharedData.replace(message.getKey(), previous, message);
           if (result){
+            notifySharedData(message.getKey(), message.getPayload(), previous.getPayload());
             return;
           }
         } else {
@@ -110,6 +116,16 @@ public class GossipCore implements GossipCoreConstants {
         }
       }
     }
+  }
+  
+  private void notifySharedData(final String key, final Object newValue,final Object oldValue) {
+    sharedDataHandlers.stream()
+            .filter(handler -> handler.getSharedDataListeningKeys().contains(key))
+            .forEach(handler -> {
+              sharedDataEventExecutor.execute(() -> {
+                handler.onUpdate(key, oldValue, newValue);
+              });
+            });
   }
   
   public void addPerNodeData(PerNodeDataMessage message){
@@ -120,24 +136,27 @@ public class GossipCore implements GossipCoreConstants {
       PerNodeDataMessage current = nodeMap.get(message.getKey());
       if (current == null){
         nodeMap.putIfAbsent(message.getKey(), message);
-        notifyPerNodeData(message,null);
+        notifyPerNodeData(message.getNodeId(), message.getKey(), message.getPayload(), null);
       } else {
         if (current.getTimestamp() < message.getTimestamp()){
           nodeMap.replace(message.getKey(), current, message);
-          notifyPerNodeData(message,current.getPayload());
+          notifyPerNodeData(message.getNodeId(), message.getKey(), message.getPayload(),
+                  current.getPayload());
         }
       }
     } else {
-      notifyPerNodeData(message,null);
+      notifyPerNodeData(message.getNodeId(), message.getKey(), message.getPayload(), null);
     }
   }
   
-  private void notifyPerNodeData(PerNodeDataMessage newMessage, Object oldValue){
-    for (UpdateNodeDataEventHandler handler : nodeDataHandlers) {
-      if (handler.getNodeDataListeningKeys().contains(newMessage.getKey())) {
-        handler.onUpdate(newMessage.getNodeId(), newMessage.getKey(), oldValue, newMessage.getPayload());
-      }
-    }
+  private void notifyPerNodeData(final String nodeId, final String key, final Object newValue,
+          final Object oldValue) {
+    perNodeDataHandlers.stream().filter(handler -> handler.getNodeDataListeningKeys().contains(key))
+            .forEach(handler -> {
+              perNodeDataEventExecutor.execute(() -> {
+                handler.onUpdate(nodeId, key, oldValue, newValue);
+              });
+            });
   }
 
   public ConcurrentHashMap<String, ConcurrentHashMap<String, PerNodeDataMessage>> getPerNodeData(){
@@ -199,7 +218,7 @@ public class GossipCore implements GossipCoreConstants {
     sendInternal(message, uri);
     if (latchAndBase == null){
       return null;
-    } 
+    }
     
     try {
       boolean complete = latchAndBase.latch.await(1, TimeUnit.SECONDS);
@@ -320,7 +339,7 @@ public class GossipCore implements GossipCoreConstants {
   }
   
   public void registerPerNodeDataSubscriber(UpdateNodeDataEventHandler handler){
-    nodeDataHandlers.add(handler);
+    perNodeDataHandlers.add(handler);
   }
   
   public void registerSharedDataSubscriber(UpdateSharedDataEventHandler handler){
@@ -328,7 +347,7 @@ public class GossipCore implements GossipCoreConstants {
   }
   
   public void unregisterPerNodeDataSubscriber(UpdateNodeDataEventHandler handler){
-    nodeDataHandlers.remove(handler);
+    perNodeDataHandlers.remove(handler);
   }
   
   public void unregisterSharedDataSubscriber(UpdateSharedDataEventHandler handler){
