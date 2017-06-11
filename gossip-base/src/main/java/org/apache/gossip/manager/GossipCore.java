@@ -25,6 +25,7 @@ import org.apache.gossip.Member;
 import org.apache.gossip.RemoteMember;
 import org.apache.gossip.crdt.Crdt;
 import org.apache.gossip.event.GossipState;
+import org.apache.gossip.event.data.DataEventManager;
 import org.apache.gossip.event.data.UpdateNodeDataEventHandler;
 import org.apache.gossip.event.data.UpdateSharedDataEventHandler;
 import org.apache.gossip.model.Base;
@@ -60,10 +61,7 @@ public class GossipCore implements GossipCoreConstants {
   private final Meter messageSerdeException;
   private final Meter tranmissionException;
   private final Meter tranmissionSuccess;
-  private final List<UpdateNodeDataEventHandler> perNodeDataHandlers;
-  private final ExecutorService perNodeDataEventExecutor;
-  private final List<UpdateSharedDataEventHandler> sharedDataHandlers;
-  private final ExecutorService sharedDataEventExecutor;
+  private final DataEventManager eventManager;
   
   public GossipCore(GossipManager manager, MetricRegistry metrics){
     this.gossipManager = manager;
@@ -71,10 +69,7 @@ public class GossipCore implements GossipCoreConstants {
     workQueue = new ArrayBlockingQueue<>(1024);
     perNodeData = new ConcurrentHashMap<>();
     sharedData = new ConcurrentHashMap<>();
-    perNodeDataHandlers = new CopyOnWriteArrayList<>();
-    sharedDataHandlers = new CopyOnWriteArrayList<>();
-    perNodeDataEventExecutor = Executors.newCachedThreadPool();
-    sharedDataEventExecutor = Executors.newCachedThreadPool();
+    eventManager = new DataEventManager();
     metrics.register(WORKQUEUE_SIZE, (Gauge<Integer>)() -> workQueue.size());
     metrics.register(PER_NODE_DATA_SIZE, (Gauge<Integer>)() -> perNodeData.size());
     metrics.register(SHARED_DATA_SIZE, (Gauge<Integer>)() ->  sharedData.size());
@@ -89,7 +84,7 @@ public class GossipCore implements GossipCoreConstants {
     while (true){
       SharedDataMessage previous = sharedData.putIfAbsent(message.getKey(), message);
       if (previous == null){
-        notifySharedData(message.getKey(), message.getPayload(), null);
+        eventManager.notifySharedData(message.getKey(), message.getPayload(), null);
         return;
       }
       if (message.getPayload() instanceof Crdt){
@@ -108,7 +103,7 @@ public class GossipCore implements GossipCoreConstants {
         if (previous.getTimestamp() < message.getTimestamp()){
           boolean result = sharedData.replace(message.getKey(), previous, message);
           if (result){
-            notifySharedData(message.getKey(), message.getPayload(), previous.getPayload());
+            eventManager.notifySharedData(message.getKey(), message.getPayload(), previous.getPayload());
             return;
           }
         } else {
@@ -117,17 +112,7 @@ public class GossipCore implements GossipCoreConstants {
       }
     }
   }
-  
-  private void notifySharedData(final String key, final Object newValue,final Object oldValue) {
-    sharedDataHandlers.stream()
-            .filter(handler -> handler.getSharedDataListeningKeys().contains(key))
-            .forEach(handler -> {
-              sharedDataEventExecutor.execute(() -> {
-                handler.onUpdate(key, oldValue, newValue);
-              });
-            });
-  }
-  
+
   public void addPerNodeData(PerNodeDataMessage message){
     ConcurrentHashMap<String,PerNodeDataMessage> nodeMap = new ConcurrentHashMap<>();
     nodeMap.put(message.getKey(), message);
@@ -136,27 +121,17 @@ public class GossipCore implements GossipCoreConstants {
       PerNodeDataMessage current = nodeMap.get(message.getKey());
       if (current == null){
         nodeMap.putIfAbsent(message.getKey(), message);
-        notifyPerNodeData(message.getNodeId(), message.getKey(), message.getPayload(), null);
+        eventManager.notifyPerNodeData(message.getNodeId(), message.getKey(), message.getPayload(), null);
       } else {
         if (current.getTimestamp() < message.getTimestamp()){
           nodeMap.replace(message.getKey(), current, message);
-          notifyPerNodeData(message.getNodeId(), message.getKey(), message.getPayload(),
+          eventManager.notifyPerNodeData(message.getNodeId(), message.getKey(), message.getPayload(),
                   current.getPayload());
         }
       }
     } else {
-      notifyPerNodeData(message.getNodeId(), message.getKey(), message.getPayload(), null);
+      eventManager.notifyPerNodeData(message.getNodeId(), message.getKey(), message.getPayload(), null);
     }
-  }
-  
-  private void notifyPerNodeData(final String nodeId, final String key, final Object newValue,
-          final Object oldValue) {
-    perNodeDataHandlers.stream().filter(handler -> handler.getNodeDataListeningKeys().contains(key))
-            .forEach(handler -> {
-              perNodeDataEventExecutor.execute(() -> {
-                handler.onUpdate(nodeId, key, oldValue, newValue);
-              });
-            });
   }
 
   public ConcurrentHashMap<String, ConcurrentHashMap<String, PerNodeDataMessage>> getPerNodeData(){
@@ -338,19 +313,19 @@ public class GossipCore implements GossipCoreConstants {
     }
   }
   
-  public void registerPerNodeDataSubscriber(UpdateNodeDataEventHandler handler){
-    perNodeDataHandlers.add(handler);
+  void registerPerNodeDataSubscriber(UpdateNodeDataEventHandler handler){
+    eventManager.registerPerNodeDataSubscriber(handler);
   }
   
-  public void registerSharedDataSubscriber(UpdateSharedDataEventHandler handler){
-    sharedDataHandlers.add(handler);
+  void registerSharedDataSubscriber(UpdateSharedDataEventHandler handler){
+    eventManager.registerSharedDataSubscriber(handler);
   }
   
-  public void unregisterPerNodeDataSubscriber(UpdateNodeDataEventHandler handler){
-    perNodeDataHandlers.remove(handler);
+  void unregisterPerNodeDataSubscriber(UpdateNodeDataEventHandler handler){
+    eventManager.unregisterPerNodeDataSubscriber(handler);
   }
   
-  public void unregisterSharedDataSubscriber(UpdateSharedDataEventHandler handler){
-    sharedDataHandlers.remove(handler);
+  void unregisterSharedDataSubscriber(UpdateSharedDataEventHandler handler){
+    eventManager.unregisterSharedDataSubscriber(handler);
   }
 }
