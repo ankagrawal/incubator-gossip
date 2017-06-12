@@ -17,6 +17,9 @@
  */
 package org.apache.gossip.event.data;
 
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.MetricRegistry;
+
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -26,19 +29,19 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 public class DataEventManager {
+
   private final List<UpdateNodeDataEventHandler> perNodeDataHandlers;
-
   private final BlockingQueue<Runnable> perNodeDataHandlerQueue;
-
   private final ExecutorService perNodeDataEventExecutor;
-
   private final List<UpdateSharedDataEventHandler> sharedDataHandlers;
-
   private final BlockingQueue<Runnable> sharedDataHandlerQueue;
-
   private final ExecutorService sharedDataEventExecutor;
+  public static final String PER_NODE_DATA_SUBSCRIBERS_SIZE = "gossip.event.data.pernode.subscribers.size";
+  public static final String PER_NODE_DATA_SUBSCRIBERS_QUEUE_SIZE = "gossip.event.data.pernode.subscribers.queue.size";
+  public static final String SHARED_DATA_SUBSCRIBERS_SIZE = "gossip.event.data.shared.subscribers.size";
+  public static final String SHARED_DATA_SUBSCRIBERS_QUEUE_SIZE = "gossip.event.data.shared.subscribers.queue.size";
 
-  public DataEventManager() {
+  public DataEventManager(MetricRegistry metrics) {
     perNodeDataHandlers = new CopyOnWriteArrayList<>();
     perNodeDataHandlerQueue = new ArrayBlockingQueue<>(64);
     perNodeDataEventExecutor = new ThreadPoolExecutor(1, 30, 1, TimeUnit.SECONDS,
@@ -48,6 +51,16 @@ public class DataEventManager {
     sharedDataHandlerQueue = new ArrayBlockingQueue<Runnable>(64);
     sharedDataEventExecutor = new ThreadPoolExecutor(1, 30, 1, TimeUnit.SECONDS,
             sharedDataHandlerQueue, new ThreadPoolExecutor.DiscardOldestPolicy());
+
+    metrics.register(PER_NODE_DATA_SUBSCRIBERS_SIZE,
+            (Gauge<Integer>) () -> perNodeDataHandlers.size());
+    metrics.register(PER_NODE_DATA_SUBSCRIBERS_QUEUE_SIZE,
+            (Gauge<Integer>) () -> perNodeDataHandlerQueue.size());
+    metrics.register(SHARED_DATA_SUBSCRIBERS_SIZE,
+            (Gauge<Integer>) () -> sharedDataHandlers.size());
+    metrics.register(SHARED_DATA_SUBSCRIBERS_QUEUE_SIZE,
+            (Gauge<Integer>) () -> sharedDataHandlerQueue.size());
+
   }
 
   public void notifySharedData(final String key, final Object newValue, final Object oldValue) {
@@ -79,7 +92,7 @@ public class DataEventManager {
     perNodeDataHandlers.remove(handler);
   }
 
-  public int getPerNodeSubscribers() {
+  public int getPerNodeSubscribersSize() {
     return perNodeDataHandlers.size();
   }
 
@@ -91,7 +104,7 @@ public class DataEventManager {
     sharedDataHandlers.remove(handler);
   }
 
-  public int getSharedDataSubscribers() {
+  public int getSharedDataSubscribersSize() {
     return sharedDataHandlers.size();
   }
 
