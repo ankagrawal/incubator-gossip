@@ -25,76 +25,74 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-
 public class DataEventManager {
-    private final List<UpdateNodeDataEventHandler> perNodeDataHandlers;
-    private final BlockingQueue<Runnable> perNodeDataHandlerQueue;
-    private final ExecutorService perNodeDataEventExecutor;
+  private final List<UpdateNodeDataEventHandler> perNodeDataHandlers;
 
-    private final List<UpdateSharedDataEventHandler> sharedDataHandlers;
-    private final BlockingQueue<Runnable> sharedDataHandlerQueue;
-    private final ExecutorService sharedDataEventExecutor;
+  private final BlockingQueue<Runnable> perNodeDataHandlerQueue;
 
+  private final ExecutorService perNodeDataEventExecutor;
 
-    public DataEventManager() {
-        perNodeDataHandlers = new CopyOnWriteArrayList<>();
-        perNodeDataHandlerQueue = new ArrayBlockingQueue<>(64);
-        perNodeDataEventExecutor = new ThreadPoolExecutor(1, 30, 1,
-                TimeUnit.SECONDS, perNodeDataHandlerQueue, new ThreadPoolExecutor.DiscardOldestPolicy());
+  private final List<UpdateSharedDataEventHandler> sharedDataHandlers;
 
-        sharedDataHandlers = new CopyOnWriteArrayList<>();
-        sharedDataHandlerQueue = new ArrayBlockingQueue<Runnable>(64);
-        sharedDataEventExecutor = new ThreadPoolExecutor(1, 30, 1,
-                TimeUnit.SECONDS, sharedDataHandlerQueue, new ThreadPoolExecutor.DiscardOldestPolicy());
-    }
+  private final BlockingQueue<Runnable> sharedDataHandlerQueue;
 
-    public void notifySharedData(final String key, final Object newValue, final Object oldValue) {
-        sharedDataHandlers.stream()
-                .filter(handler -> handler.getSharedDataListeningKeys() != null
-                        && handler.getSharedDataListeningKeys().contains(key))
-                .forEach(handler -> {
-                    sharedDataEventExecutor.execute(() -> {
-                        handler.onUpdate(key, oldValue, newValue);
-                    });
-                });
-    }
+  private final ExecutorService sharedDataEventExecutor;
 
-    public void notifyPerNodeData(final String nodeId, final String key, final Object newValue,
-                                  final Object oldValue) {
-        perNodeDataHandlers.stream()
-                .filter(handler -> handler.getNodeDataListeningKeys() != null
-                        && handler.getNodeDataListeningKeys().contains(key))
-                .forEach(handler -> {
-                    perNodeDataEventExecutor.execute(() -> {
-                        handler.onUpdate(nodeId, key, oldValue, newValue);
-                    });
-                });
-    }
+  public DataEventManager() {
+    perNodeDataHandlers = new CopyOnWriteArrayList<>();
+    perNodeDataHandlerQueue = new ArrayBlockingQueue<>(64);
+    perNodeDataEventExecutor = new ThreadPoolExecutor(1, 30, 1, TimeUnit.SECONDS,
+            perNodeDataHandlerQueue, new ThreadPoolExecutor.DiscardOldestPolicy());
 
-    public void registerPerNodeDataSubscriber(UpdateNodeDataEventHandler handler) {
-        perNodeDataHandlers.add(handler);
-    }
+    sharedDataHandlers = new CopyOnWriteArrayList<>();
+    sharedDataHandlerQueue = new ArrayBlockingQueue<Runnable>(64);
+    sharedDataEventExecutor = new ThreadPoolExecutor(1, 30, 1, TimeUnit.SECONDS,
+            sharedDataHandlerQueue, new ThreadPoolExecutor.DiscardOldestPolicy());
+  }
 
-    public void unregisterPerNodeDataSubscriber(UpdateNodeDataEventHandler handler) {
-        perNodeDataHandlers.remove(handler);
-    }
+  public void notifySharedData(final String key, final Object newValue, final Object oldValue) {
+    sharedDataHandlers.stream()
+            .filter(handler -> handler.getSharedDataListeningKeys() != null && handler
+                    .getSharedDataListeningKeys().contains(key)).forEach(handler -> {
+      sharedDataEventExecutor.execute(() -> {
+        handler.onUpdate(key, oldValue, newValue);
+      });
+    });
+  }
 
+  public void notifyPerNodeData(final String nodeId, final String key, final Object newValue,
+          final Object oldValue) {
+    perNodeDataHandlers.stream()
+            .filter(handler -> handler.getNodeDataListeningKeys() != null && handler
+                    .getNodeDataListeningKeys().contains(key)).forEach(handler -> {
+      perNodeDataEventExecutor.execute(() -> {
+        handler.onUpdate(nodeId, key, oldValue, newValue);
+      });
+    });
+  }
 
-    public int getPerNodeSubscribers() {
-        return perNodeDataHandlers.size();
-    }
+  public void registerPerNodeDataSubscriber(UpdateNodeDataEventHandler handler) {
+    perNodeDataHandlers.add(handler);
+  }
 
-    public void registerSharedDataSubscriber(UpdateSharedDataEventHandler handler) {
-        sharedDataHandlers.add(handler);
-    }
+  public void unregisterPerNodeDataSubscriber(UpdateNodeDataEventHandler handler) {
+    perNodeDataHandlers.remove(handler);
+  }
 
-    public void unregisterSharedDataSubscriber(UpdateSharedDataEventHandler handler) {
-        sharedDataHandlers.remove(handler);
-    }
+  public int getPerNodeSubscribers() {
+    return perNodeDataHandlers.size();
+  }
 
-    public int getSharedDataSubscribers() {
-        return sharedDataHandlers.size();
-    }
+  public void registerSharedDataSubscriber(UpdateSharedDataEventHandler handler) {
+    sharedDataHandlers.add(handler);
+  }
 
+  public void unregisterSharedDataSubscriber(UpdateSharedDataEventHandler handler) {
+    sharedDataHandlers.remove(handler);
+  }
+
+  public int getSharedDataSubscribers() {
+    return sharedDataHandlers.size();
+  }
 
 }
