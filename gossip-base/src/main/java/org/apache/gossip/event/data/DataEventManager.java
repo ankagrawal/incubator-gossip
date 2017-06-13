@@ -29,40 +29,41 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 public class DataEventManager {
-
+  
   private final List<UpdateNodeDataEventHandler> perNodeDataHandlers;
   private final BlockingQueue<Runnable> perNodeDataHandlerQueue;
   private final ExecutorService perNodeDataEventExecutor;
   private final List<UpdateSharedDataEventHandler> sharedDataHandlers;
   private final BlockingQueue<Runnable> sharedDataHandlerQueue;
   private final ExecutorService sharedDataEventExecutor;
-  public static final String PER_NODE_DATA_SUBSCRIBERS_SIZE = "gossip.event.data.pernode.subscribers.size";
-  public static final String PER_NODE_DATA_SUBSCRIBERS_QUEUE_SIZE = "gossip.event.data.pernode.subscribers.queue.size";
-  public static final String SHARED_DATA_SUBSCRIBERS_SIZE = "gossip.event.data.shared.subscribers.size";
-  public static final String SHARED_DATA_SUBSCRIBERS_QUEUE_SIZE = "gossip.event.data.shared.subscribers.queue.size";
-
+  
   public DataEventManager(MetricRegistry metrics) {
     perNodeDataHandlers = new CopyOnWriteArrayList<>();
-    perNodeDataHandlerQueue = new ArrayBlockingQueue<>(64);
-    perNodeDataEventExecutor = new ThreadPoolExecutor(1, 30, 1, TimeUnit.SECONDS,
+    perNodeDataHandlerQueue = new ArrayBlockingQueue<>(DataEventConstants.PER_NODE_DATA_QUEUE_SIZE);
+    perNodeDataEventExecutor = new ThreadPoolExecutor(
+            DataEventConstants.PER_NODE_DATA_CORE_POOL_SIZE,
+            DataEventConstants.PER_NODE_DATA_MAX_POOL_SIZE,
+            DataEventConstants.PER_NODE_DATA_KEEP_ALIVE_TIME_SECONDS, TimeUnit.SECONDS,
             perNodeDataHandlerQueue, new ThreadPoolExecutor.DiscardOldestPolicy());
-
+    
     sharedDataHandlers = new CopyOnWriteArrayList<>();
-    sharedDataHandlerQueue = new ArrayBlockingQueue<Runnable>(64);
-    sharedDataEventExecutor = new ThreadPoolExecutor(1, 30, 1, TimeUnit.SECONDS,
+    sharedDataHandlerQueue = new ArrayBlockingQueue<>(64);
+    sharedDataEventExecutor = new ThreadPoolExecutor(DataEventConstants.SHARED_DATA_CORE_POOL_SIZE,
+            DataEventConstants.SHARED_DATA_MAX_POOL_SIZE,
+            DataEventConstants.SHARED_DATA_KEEP_ALIVE_TIME_SECONDS, TimeUnit.SECONDS,
             sharedDataHandlerQueue, new ThreadPoolExecutor.DiscardOldestPolicy());
-
-    metrics.register(PER_NODE_DATA_SUBSCRIBERS_SIZE,
+    
+    metrics.register(DataEventConstants.PER_NODE_DATA_SUBSCRIBERS_SIZE,
             (Gauge<Integer>) () -> perNodeDataHandlers.size());
-    metrics.register(PER_NODE_DATA_SUBSCRIBERS_QUEUE_SIZE,
+    metrics.register(DataEventConstants.PER_NODE_DATA_SUBSCRIBERS_QUEUE_SIZE,
             (Gauge<Integer>) () -> perNodeDataHandlerQueue.size());
-    metrics.register(SHARED_DATA_SUBSCRIBERS_SIZE,
+    metrics.register(DataEventConstants.SHARED_DATA_SUBSCRIBERS_SIZE,
             (Gauge<Integer>) () -> sharedDataHandlers.size());
-    metrics.register(SHARED_DATA_SUBSCRIBERS_QUEUE_SIZE,
+    metrics.register(DataEventConstants.SHARED_DATA_SUBSCRIBERS_QUEUE_SIZE,
             (Gauge<Integer>) () -> sharedDataHandlerQueue.size());
-
+    
   }
-
+  
   public void notifySharedData(final String key, final Object newValue, final Object oldValue) {
     sharedDataHandlers.stream()
             .filter(handler -> handler.getSharedDataListeningKeys() != null && handler
@@ -72,7 +73,7 @@ public class DataEventManager {
       });
     });
   }
-
+  
   public void notifyPerNodeData(final String nodeId, final String key, final Object newValue,
           final Object oldValue) {
     perNodeDataHandlers.stream()
@@ -83,29 +84,29 @@ public class DataEventManager {
       });
     });
   }
-
+  
   public void registerPerNodeDataSubscriber(UpdateNodeDataEventHandler handler) {
     perNodeDataHandlers.add(handler);
   }
-
+  
   public void unregisterPerNodeDataSubscriber(UpdateNodeDataEventHandler handler) {
     perNodeDataHandlers.remove(handler);
   }
-
+  
   public int getPerNodeSubscribersSize() {
     return perNodeDataHandlers.size();
   }
-
+  
   public void registerSharedDataSubscriber(UpdateSharedDataEventHandler handler) {
     sharedDataHandlers.add(handler);
   }
-
+  
   public void unregisterSharedDataSubscriber(UpdateSharedDataEventHandler handler) {
     sharedDataHandlers.remove(handler);
   }
-
+  
   public int getSharedDataSubscribersSize() {
     return sharedDataHandlers.size();
   }
-
+  
 }
