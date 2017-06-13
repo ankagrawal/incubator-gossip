@@ -18,7 +18,6 @@
 package org.apache.gossip;
 
 import io.teknek.tunit.TUnit;
-import org.apache.gossip.event.data.UpdateSharedDataEventHandler;
 import org.apache.gossip.manager.GossipManager;
 import org.apache.gossip.manager.GossipManagerBuilder;
 import org.apache.gossip.model.SharedDataMessage;
@@ -29,7 +28,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Semaphore;
@@ -79,19 +77,12 @@ public class SharedDataEventTest extends AbstractIntegrationBase {
     clients.get(0).gossipSharedData(sharedNodeData("category", "distributed"));
     
     // Node 2 is interested in data changes for the key "organization" and "category"
-    clients.get(1).registerSharedDataSubscriber(new UpdateSharedDataEventHandler() {
-      @Override
-      public void onUpdate(String key, Object oldValue, Object newValue) {
-        receivedKey = key;
-        receivingNodeDataOldValue = oldValue;
-        receivingNodeDataNewValue = newValue;
-        lock.release();
-      }
-  
-      @Override
-      public List<String> getSharedDataListeningKeys() {
-        return Arrays.asList("organization","category");
-      }
+    clients.get(1).registerSharedDataSubscriber((key, oldValue, newValue) -> {
+      if (!key.equals("organization") && !key.equals("category")) return;
+      receivedKey = key;
+      receivingNodeDataOldValue = oldValue;
+      receivingNodeDataNewValue = newValue;
+      lock.release();
     });
     
     // Node 2 first time gets shared data

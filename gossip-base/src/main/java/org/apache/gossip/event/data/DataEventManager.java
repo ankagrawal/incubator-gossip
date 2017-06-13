@@ -65,24 +65,14 @@ public class DataEventManager {
   }
   
   public void notifySharedData(final String key, final Object newValue, final Object oldValue) {
-    sharedDataHandlers.stream()
-            .filter(handler -> handler.getSharedDataListeningKeys() != null && handler
-                    .getSharedDataListeningKeys().contains(key)).forEach(handler -> {
-      sharedDataEventExecutor.execute(() -> {
-        handler.onUpdate(key, oldValue, newValue);
-      });
-    });
+    sharedDataHandlers.forEach(handler -> sharedDataEventExecutor
+            .execute(() -> handler.onUpdate(key, oldValue, newValue)));
   }
   
   public void notifyPerNodeData(final String nodeId, final String key, final Object newValue,
           final Object oldValue) {
-    perNodeDataHandlers.stream()
-            .filter(handler -> handler.getNodeDataListeningKeys() != null && handler
-                    .getNodeDataListeningKeys().contains(key)).forEach(handler -> {
-      perNodeDataEventExecutor.execute(() -> {
-        handler.onUpdate(nodeId, key, oldValue, newValue);
-      });
-    });
+    perNodeDataHandlers.forEach(handler -> perNodeDataEventExecutor
+            .execute(() -> handler.onUpdate(nodeId, key, oldValue, newValue)));
   }
   
   public void registerPerNodeDataSubscriber(UpdateNodeDataEventHandler handler) {

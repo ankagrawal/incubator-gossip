@@ -22,8 +22,6 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
@@ -45,17 +43,9 @@ public class DataEventManagerTest {
   public void perNodeDataEventHandlerAddRemoveTest() {
     DataEventManager eventManager = new DataEventManager(new MetricRegistry());
     
-    UpdateNodeDataEventHandler nodeDataEventHandler = new UpdateNodeDataEventHandler() {
-      @Override
-      public void onUpdate(String nodeId, String key, Object oldValue, Object newValue) {
-      
-      }
-      
-      @Override
-      public List<String> getNodeDataListeningKeys() {
-        return null;
-      }
+    UpdateNodeDataEventHandler nodeDataEventHandler = (nodeId, key, oldValue, newValue) -> {
     };
+    
     eventManager.registerPerNodeDataSubscriber(nodeDataEventHandler);
     Assert.assertEquals(1, eventManager.getPerNodeSubscribersSize());
     eventManager.unregisterPerNodeDataSubscriber(nodeDataEventHandler);
@@ -64,25 +54,18 @@ public class DataEventManagerTest {
   
   // Test whether the per node data events are fired for matching key
   @Test
-  public void perNodeDataEventHandlerPositiveTest() throws InterruptedException {
+  public void perNodeDataEventHandlerTest() throws InterruptedException {
     DataEventManager eventManager = new DataEventManager(new MetricRegistry());
     resetData();
-    // TODO: 6/11/17 replace with mock framework
+
     // A new subscriber "Juliet" is like to notified when per node data change for the key "Romeo"
-    UpdateNodeDataEventHandler juliet = new UpdateNodeDataEventHandler() {
-      @Override
-      public void onUpdate(String nodeId, String key, Object oldValue, Object newValue) {
-        receivedNodeId = nodeId;
-        receivedKey = key;
-        receivedNewValue = newValue;
-        receivedOldValue = oldValue;
-        semaphore.release();
-      }
-      
-      @Override
-      public List<String> getNodeDataListeningKeys() {
-        return Collections.singletonList("Romeo");
-      }
+    UpdateNodeDataEventHandler juliet = (nodeId, key, oldValue, newValue) -> {
+      if(!key.equals("Romeo")) return;
+      receivedNodeId = nodeId;
+      receivedKey = key;
+      receivedNewValue = newValue;
+      receivedOldValue = oldValue;
+      semaphore.release();
     };
     // Juliet register with eventManager
     eventManager.registerPerNodeDataSubscriber(juliet);
@@ -99,56 +82,12 @@ public class DataEventManagerTest {
     eventManager.unregisterPerNodeDataSubscriber(juliet);
   }
   
-  // Per node data events should not fired for keys that are not interested by the handler
-  @Test
-  public void perNodeDataEventHandlerNegativeTest() throws InterruptedException {
-    DataEventManager eventManager = new DataEventManager(new MetricRegistry());
-    resetData();
-    // A new subscriber "Juliet" is like to notified when per node data change for the key "Romeo"
-    UpdateNodeDataEventHandler juliet = new UpdateNodeDataEventHandler() {
-      @Override
-      public void onUpdate(String nodeId, String key, Object oldValue, Object newValue) {
-        receivedNodeId = nodeId;
-        receivedKey = key;
-        receivedNewValue = newValue;
-        receivedOldValue = oldValue;
-        semaphore.release();
-      }
-      
-      @Override
-      public List<String> getNodeDataListeningKeys() {
-        return Collections.singletonList("Romeo");
-      }
-    };
-    // Juliet register with eventManager
-    eventManager.registerPerNodeDataSubscriber(juliet);
-    // Paris is thinking after having dinner
-    eventManager.notifyPerNodeData("Verona", "Paris", "thinking", "eating");
-    
-    // Juliet should not get notified
-    semaphore.tryAcquire(2, TimeUnit.SECONDS);
-    Assert.assertEquals(null, receivedNodeId);
-    Assert.assertEquals(null, receivedKey);
-    Assert.assertEquals(null, receivedNewValue);
-    Assert.assertEquals(null, receivedOldValue);
-    
-    eventManager.unregisterPerNodeDataSubscriber(juliet);
-  }
-  
   @Test
   public void sharedDataEventHandlerAddRemoveTest() {
     DataEventManager eventManager = new DataEventManager(new MetricRegistry());
     
-    UpdateSharedDataEventHandler sharedDataEventHandler = new UpdateSharedDataEventHandler() {
-      @Override
-      public void onUpdate(String key, Object oldValue, Object newValue) {
-      
-      }
-      
-      @Override
-      public List<String> getSharedDataListeningKeys() {
-        return null;
-      }
+    UpdateSharedDataEventHandler sharedDataEventHandler = (key, oldValue, newValue) -> {
+    
     };
     eventManager.registerSharedDataSubscriber(sharedDataEventHandler);
     Assert.assertEquals(1, eventManager.getSharedDataSubscribersSize());
@@ -157,26 +96,19 @@ public class DataEventManagerTest {
     
   }
   
-  // Test whether the shared data events are fired for matching key
+  // Test whether the shared data events are fired
   @Test
-  public void sharedDataEventHandlerPositiveTest() throws InterruptedException {
+  public void sharedDataEventHandlerTest() throws InterruptedException {
     DataEventManager eventManager = new DataEventManager(new MetricRegistry());
     resetData();
     
     // A new subscriber "Alice" is like to notified when shared data change for the key "technology"
-    UpdateSharedDataEventHandler alice = new UpdateSharedDataEventHandler() {
-      @Override
-      public void onUpdate(String key, Object oldValue, Object newValue) {
-        receivedKey = key;
-        receivedNewValue = newValue;
-        receivedOldValue = oldValue;
-        semaphore.release();
-      }
-      
-      @Override
-      public List<String> getSharedDataListeningKeys() {
-        return Collections.singletonList("technology");
-      }
+    UpdateSharedDataEventHandler alice = (key, oldValue, newValue) -> {
+      if(!key.equals("technology")) return;
+      receivedKey = key;
+      receivedNewValue = newValue;
+      receivedOldValue = oldValue;
+      semaphore.release();
     };
     // Alice register with eventManager
     eventManager.registerSharedDataSubscriber(alice);
@@ -193,79 +125,6 @@ public class DataEventManagerTest {
     eventManager.unregisterSharedDataSubscriber(alice);
   }
   
-  // Shared data events should not fired for keys that are not interested by the handler
-  @Test
-  public void sharedDataEventHandlerNegativeTest() throws InterruptedException {
-    DataEventManager eventManager = new DataEventManager(new MetricRegistry());
-    resetData();
-    
-    // A new subscriber "Alice" is like to notified when shared data change for the key "technology"
-    UpdateSharedDataEventHandler alice = new UpdateSharedDataEventHandler() {
-      @Override
-      public void onUpdate(String key, Object oldValue, Object newValue) {
-        receivedKey = key;
-        receivedNewValue = newValue;
-        receivedOldValue = oldValue;
-        semaphore.release();
-      }
-      
-      @Override
-      public List<String> getSharedDataListeningKeys() {
-        return Collections.singletonList("technology");
-      }
-    };
-    // Alice register with eventManager
-    eventManager.registerSharedDataSubscriber(alice);
-    
-    // art key get changed
-    eventManager.notifySharedData("art", "new drama", "new drawing");
-    
-    // Alice should not notified
-    semaphore.tryAcquire(2, TimeUnit.SECONDS);
-    Assert.assertEquals(null, receivedKey);
-    Assert.assertEquals(null, receivedNewValue);
-    Assert.assertEquals(null, receivedOldValue);
-    
-    eventManager.unregisterSharedDataSubscriber(alice);
-    
-  }
-  
-  // What if a handler returns null for the listening keys
-  @Test
-  public void nullListeningKeyTest() {
-    DataEventManager eventManager = new DataEventManager(new MetricRegistry());
-    
-    UpdateNodeDataEventHandler nodeDataEventHandler = new UpdateNodeDataEventHandler() {
-      @Override
-      public void onUpdate(String nodeId, String key, Object oldValue, Object newValue) {
-      }
-      
-      @Override
-      public List<String> getNodeDataListeningKeys() {
-        return null;
-      }
-    };
-    
-    UpdateSharedDataEventHandler sharedDataEventHandler = new UpdateSharedDataEventHandler() {
-      @Override
-      public void onUpdate(String key, Object oldValue, Object newValue) {
-      }
-      
-      @Override
-      public List<String> getSharedDataListeningKeys() {
-        return null;
-      }
-    };
-    
-    eventManager.registerPerNodeDataSubscriber(nodeDataEventHandler);
-    eventManager.registerSharedDataSubscriber(sharedDataEventHandler);
-    
-    eventManager.notifyPerNodeData("", "", "", "");
-    eventManager.notifySharedData("", "", "");
-    
-    Assert.assertTrue(true);
-  }
-  
   // Test the MetricRegistry
   @Test
   public void metricRegistryTest() {
@@ -273,40 +132,24 @@ public class DataEventManagerTest {
     
     DataEventManager eventManager = new DataEventManager(registry);
     
-    UpdateNodeDataEventHandler nodeDataEventHandler = new UpdateNodeDataEventHandler() {
-      @Override
-      public void onUpdate(String nodeId, String key, Object oldValue, Object newValue) {
-      }
-      
-      @Override
-      public List<String> getNodeDataListeningKeys() {
-        return null;
-      }
+    UpdateNodeDataEventHandler nodeDataEventHandler = (nodeId, key, oldValue, newValue) -> {
     };
     
-    UpdateSharedDataEventHandler sharedDataEventHandler = new UpdateSharedDataEventHandler() {
-      @Override
-      public void onUpdate(String key, Object oldValue, Object newValue) {
-      }
-      
-      @Override
-      public List<String> getSharedDataListeningKeys() {
-        return null;
-      }
+    UpdateSharedDataEventHandler sharedDataEventHandler = (key, oldValue, newValue) -> {
     };
     
     eventManager.registerPerNodeDataSubscriber(nodeDataEventHandler);
     eventManager.registerSharedDataSubscriber(sharedDataEventHandler);
     
     Assert.assertEquals(1,
-            registry.getGauges().get(DataEventManager.PER_NODE_DATA_SUBSCRIBERS_SIZE).getValue());
+            registry.getGauges().get(DataEventConstants.PER_NODE_DATA_SUBSCRIBERS_SIZE).getValue());
     Assert.assertEquals(0,
-            registry.getGauges().get(DataEventManager.PER_NODE_DATA_SUBSCRIBERS_QUEUE_SIZE)
+            registry.getGauges().get(DataEventConstants.PER_NODE_DATA_SUBSCRIBERS_QUEUE_SIZE)
                     .getValue());
     Assert.assertEquals(1,
-            registry.getGauges().get(DataEventManager.SHARED_DATA_SUBSCRIBERS_SIZE).getValue());
+            registry.getGauges().get(DataEventConstants.SHARED_DATA_SUBSCRIBERS_SIZE).getValue());
     Assert.assertEquals(0,
-            registry.getGauges().get(DataEventManager.SHARED_DATA_SUBSCRIBERS_QUEUE_SIZE)
+            registry.getGauges().get(DataEventConstants.SHARED_DATA_SUBSCRIBERS_QUEUE_SIZE)
                     .getValue());
     
   }

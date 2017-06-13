@@ -18,7 +18,6 @@
 package org.apache.gossip;
 
 import io.teknek.tunit.TUnit;
-import org.apache.gossip.event.data.UpdateNodeDataEventHandler;
 import org.apache.gossip.manager.GossipManager;
 import org.apache.gossip.manager.GossipManagerBuilder;
 import org.apache.gossip.model.PerNodeDataMessage;
@@ -29,7 +28,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Semaphore;
@@ -81,20 +79,13 @@ public class PerNodeDataEventTest extends AbstractIntegrationBase {
     clients.get(0).gossipPerNodeData(getPerNodeData("category", "distributed"));
     
     // Node 2 is interested in data changes for the key "organization" and "category"
-    clients.get(1).registerPerNodeDataSubscriber(new UpdateNodeDataEventHandler() {
-      @Override
-      public void onUpdate(String nodeId, String key, Object oldValue, Object newValue) {
-        receivingNodeId = nodeId;
-        receivedKey = key;
-        receivingNodeDataOldValue = oldValue;
-        receivingNodeDataNewValue = newValue;
-        lock.release();
-      }
-  
-      @Override
-      public List<String> getNodeDataListeningKeys() {
-        return Arrays.asList("organization","category");
-      }
+    clients.get(1).registerPerNodeDataSubscriber((nodeId, key, oldValue, newValue) -> {
+      if (!key.equals("organization") && !key.equals("category")) return;
+      receivingNodeId = nodeId;
+      receivedKey = key;
+      receivingNodeDataOldValue = oldValue;
+      receivingNodeDataNewValue = newValue;
+      lock.release();
     });
   
     // Node 2 first time adds Node 1 data
