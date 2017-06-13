@@ -47,7 +47,7 @@ public class DataEventManager {
             perNodeDataHandlerQueue, new ThreadPoolExecutor.DiscardOldestPolicy());
     
     sharedDataHandlers = new CopyOnWriteArrayList<>();
-    sharedDataHandlerQueue = new ArrayBlockingQueue<>(64);
+    sharedDataHandlerQueue = new ArrayBlockingQueue<>(DataEventConstants.SHARED_DATA_QUEUE_SIZE);
     sharedDataEventExecutor = new ThreadPoolExecutor(DataEventConstants.SHARED_DATA_CORE_POOL_SIZE,
             DataEventConstants.SHARED_DATA_MAX_POOL_SIZE,
             DataEventConstants.SHARED_DATA_KEEP_ALIVE_TIME_SECONDS, TimeUnit.SECONDS,
