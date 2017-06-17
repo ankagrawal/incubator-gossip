@@ -97,6 +97,10 @@ public class GossipCore implements GossipCoreConstants {
         merged.setPayload(mergedCrdt);
         boolean replaced = sharedData.replace(message.getKey(), previous, merged);
         if (replaced){
+          if(!merged.getPayload().equals(previous.getPayload())) {
+            eventManager
+                    .notifySharedData(message.getKey(), merged.getPayload(), previous.getPayload());
+          }
           return;
         }
       } else {
