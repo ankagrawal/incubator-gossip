@@ -24,6 +24,8 @@ import org.apache.gossip.manager.GossipManagerBuilder;
 import org.apache.gossip.model.SharedDataMessage;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.platform.runner.JUnitPlatform;
+import org.junit.runner.RunWith;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -34,6 +36,7 @@ import java.util.UUID;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
+@RunWith(JUnitPlatform.class)
 public class SharedDataEventTest extends AbstractIntegrationBase {
   
   private String receivedKey = "";
