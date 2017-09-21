@@ -1,3 +1,21 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.gossip.consistency;
 
 import java.util.ArrayList;
@@ -26,11 +44,11 @@ public class NearestTargets implements OperationTargets {
 		List<LocalMember> nearestNodes = new ArrayList<LocalMember>();
 		for(int i = 0; i < living.size(); i++) {
 			Map<String, String> props = living.get(i).getProperties();
-			double x1 = Double.parseDouble(me.getProperties().get("latitude"));
-			double y1 = Double.parseDouble(me.getProperties().get("longitude"));
-			double x2 = Double.parseDouble(props.get("latitude"));
-			double y2 = Double.parseDouble(props.get("longitude"));
-			double dist = Math.sqrt(((x1 - x2) * (x1 - x2)) + ((y1 - y2) * (y1 - y2)));
+			double dx = Double.parseDouble(me.getProperties().get("latitude"))
+					    - Double.parseDouble(props.get("latitude"));
+			double dy = Double.parseDouble(me.getProperties().get("longitude"))
+					    - Double.parseDouble(props.get("longitude"));
+			double dist = Math.sqrt((dx * dx) + (dy * dy));
 			map.put(new Double(dist), living.get(i));
 		}
 		for(Map.Entry<Double,LocalMember> entry : map.entrySet()) {

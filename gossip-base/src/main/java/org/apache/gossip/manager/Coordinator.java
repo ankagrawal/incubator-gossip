@@ -1,15 +1,29 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.gossip.manager;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.gossip.LocalMember;
 import org.apache.gossip.Member;
@@ -18,26 +32,83 @@ import org.apache.gossip.consistency.ConsistencyLevel;
 import org.apache.gossip.consistency.RemoteRequestCallable;
 import org.apache.gossip.model.Request;
 import org.apache.gossip.model.Response;
+import org.apache.log4j.Logger;
 
 public class Coordinator {
+	public static final Logger LOGGER = Logger.getLogger(Coordinator.class);
     ExecutorService executor;
     
     public Coordinator() {
     	executor = Executors.newCachedThreadPool();
     }
     
+    private void cancelAll (List<Future<Response>> futures) {
+		for(Future<Response> future : futures) {
+			future.cancel(true);
+		}
+	}
+
     private List<Response> handleAll(List<Future<Response>> futures,
+    		ExecutorCompletionService<Response> ecs) {
+    	List<Response> responses = new ArrayList<Response>();
+    	while(futures.size() > 0) {
+    		try {
+    			Future<Response> ft = ecs.take();
+    		    responses.add(ft.get());
+    		    futures.remove(ft);
+    		} catch(Exception ex) {
+    			cancelAll(futures);
+    			LOGGER.error("One of the nodes failed to return result");
+    			LOGGER.error("Unable to satisfy consistency requirement ALL for this request");
+    			return null;
+    		}
+    	}
+    	return responses;
+    }
+    
+    private List<Response> handleN(List<Future<Response>> futures,
+    		ExecutorCompletionService<Response> ecs, Consistency con) {
+    	int availableResults = 0;
+    	int allowedFailures = futures.size() - (Integer)con.getParameters().get("n");
+    	List<Response> responses = new ArrayList<Response>();
+    	while(availableResults < (Integer)con.getParameters().get("n")) {
+    		try {
+    			Future<Response> ft = ecs.take();
+    		    responses.add(ft.get());
+    		    availableResults++;
+    		    futures.remove(ft);
+    		} catch(Exception ex) {
+    			allowedFailures--;
+    			if(allowedFailures < 0)
+    			{
+    				cancelAll(futures);
+    				LOGGER.error("Not enough results available to support consistency level N with value"
+    			                 + Integer.toString((Integer)con.getParameters().get("n")));
+    				return null;
+    			}
+    		}
+    	}
+    	cancelAll(futures);
+    	return responses;
+    }
+    
+    private List<Response> handleAny(List<Future<Response>> futures,
     		ExecutorCompletionService<Response> ecs) {
     	int futureSize = futures.size();
     	List<Response> responses = new ArrayList<Response>();
-    	while(futureSize > 0) {
-    		try {
-    		    responses.add(ecs.take().get());
-    		    futureSize--;
-    		} catch(Exception ex) {
-    			System.out.println(ex.toString());
-    		}
+    	while(futureSize > 0){
+			try {
+			    responses.add(ecs.take().get());
+			    break;
+			} catch(Exception ex) {
+			}
+			futureSize--;
     	}
+	    cancelAll(futures);
+		if(responses.size() == 0) {
+		    LOGGER.error("Couldnt get enough responses to satisfy consistency requirement ANY");
+		    return null;
+		}
     	return responses;
     }
     
@@ -52,7 +123,7 @@ public class Coordinator {
     	if(con.getLevel() == ConsistencyLevel.ALL)
     		return handleAll(futures, ecs);
     	else if(con.getLevel() == ConsistencyLevel.N)
-    		return handleN(futures, ecs);
+    		return handleN(futures, ecs, con);
     	else if(con.getLevel() == ConsistencyLevel.ANY)
     		return handleAny(futures, ecs);
     	return null;

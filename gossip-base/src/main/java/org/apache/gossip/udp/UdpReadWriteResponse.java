@@ -16,36 +16,35 @@
  * limitations under the License.
  */
 
-package org.apache.gossip.model;
+package org.apache.gossip.udp;
 
-public class ReadWriteResponse extends Response {
-	private String key;
-	private Object value;
-	private Long timestamp;
-	private Long expireAt;
-	
-	public String getKey() {
-		return key;
-	}
-	public void setKey(String key) {
-		this.key = key;
-	}
-	public Object getValue() {
-		return value;
-	}
-	public void setValue(Object value) {
-		this.value = value;
-	}
-	public Long getTimestamp() {
-		return timestamp;
-	}
-	public void setTimestamp(Long timestamp) {
-		this.timestamp = timestamp;
-	}
-	public Long getExpireAt() {
-		return expireAt;
-	}
-	public void setExpireAt(Long expireAt) {
-		this.expireAt = expireAt;
-	}
+import org.apache.gossip.model.ReadWriteResponse;
+
+public class UdpReadWriteResponse extends ReadWriteResponse implements Trackable {
+
+	  private String uriFrom;
+	  private String uuid;
+	  
+	  public String getUriFrom() {
+	    return uriFrom;
+	  }
+	  
+	  public void setUriFrom(String uriFrom) {
+	    this.uriFrom = uriFrom;
+	  }
+	  
+	  public String getUuid() {
+	    return uuid;
+	  }
+	  
+	  public void setUuid(String uuid) {
+	    this.uuid = uuid;
+	  }
+
+	  @Override
+	  public String toString() {
+	    return "UdpReadWriteResponse [uriFrom=" + uriFrom + ", uuid=" + uuid +
+	    		", getKey()=" + getKey() + ", getValue()=" + getValue() +
+	    		", getTimestamp()=" + getTimestamp() + ", getExpireAt()=" + getExpireAt() + "]";
+	  }
 }
