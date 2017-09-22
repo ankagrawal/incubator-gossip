@@ -45,16 +45,15 @@ public class ReadRequestHandler implements MessageHandler {
 	public boolean invoke(GossipCore gossipCore, GossipManager gossipManager,
 			Base base) {
 		UdpReadRequest request = (UdpReadRequest)base;
-		if(gossipCore.getSharedData().containsKey(request.getKey())) {
-			UdpReadWriteResponse rwResponse = new UdpReadWriteResponse();
-			rwResponse.setKey(request.getKey());
-			rwResponse.setValue(gossipCore.getPerNodeData().get(request.getKey()));
-			URI uri = getUriFromId(request.getUriFrom(), gossipManager);
-			if(uri == null) {
-				LOGGER.error("Cant find a member with the id to send a response");
-			} else {
-			    gossipCore.sendOneWay(rwResponse, uri);
-			}
+		Object value = gossipCore.doRead(request.getKey());
+		UdpReadWriteResponse rwResponse = new UdpReadWriteResponse();
+		rwResponse.setKey(request.getKey());
+		rwResponse.setValue(value);
+		URI uri = getUriFromId(request.getUriFrom(), gossipManager);
+		if(uri == null) {
+			LOGGER.error("Cant find a member with the id to send a response");
+		} else {
+		    gossipCore.sendOneWay(rwResponse, uri);
 		}
 		return true;
 	}

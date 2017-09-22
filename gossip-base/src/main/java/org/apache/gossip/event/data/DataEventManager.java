@@ -36,6 +36,12 @@ public class DataEventManager {
   private final List<UpdateSharedDataEventHandler> sharedDataHandlers;
   private final BlockingQueue<Runnable> sharedDataHandlerQueue;
   private final ExecutorService sharedDataEventExecutor;
+  private ReadRequestEventHandler readRequestEventHandler;
+  private final BlockingQueue<Runnable> readRequestHandlerQueue;
+  private final ExecutorService readRequestEventExecutor;
+  private WriteRequestEventHandler writeRequestEventHandler;
+  private final BlockingQueue<Runnable> writeRequestHandlerQueue;
+  private final ExecutorService writeRequestEventExecutor;
   
   public DataEventManager(MetricRegistry metrics) {
     perNodeDataHandlers = new CopyOnWriteArrayList<>();
@@ -52,7 +58,21 @@ public class DataEventManager {
             DataEventConstants.SHARED_DATA_MAX_POOL_SIZE,
             DataEventConstants.SHARED_DATA_KEEP_ALIVE_TIME_SECONDS, TimeUnit.SECONDS,
             sharedDataHandlerQueue, new ThreadPoolExecutor.DiscardOldestPolicy());
-    
+
+    readRequestEventHandler = null; 
+    readRequestHandlerQueue = new ArrayBlockingQueue<>(DataEventConstants.READ_REQUEST_NOTIFIER_QUEUE_SIZE);
+    readRequestEventExecutor = new ThreadPoolExecutor(DataEventConstants.READ_REQUEST_NOTIFIER_CORE_POOL_SIZE,
+            DataEventConstants.READ_REQUEST_NOTIFIER_MAX_POOL_SIZE,
+            DataEventConstants.READ_REQUEST_NOTIFIER_KEEP_ALIVE_TIME_SECONDS, TimeUnit.SECONDS,
+            readRequestHandlerQueue, new ThreadPoolExecutor.DiscardOldestPolicy());
+
+    writeRequestEventHandler = null; 
+    writeRequestHandlerQueue = new ArrayBlockingQueue<>(DataEventConstants.WRITE_REQUEST_NOTIFIER_QUEUE_SIZE);
+    writeRequestEventExecutor = new ThreadPoolExecutor(DataEventConstants.WRITE_REQUEST_NOTIFIER_CORE_POOL_SIZE,
+            DataEventConstants.WRITE_REQUEST_NOTIFIER_MAX_POOL_SIZE,
+            DataEventConstants.WRITE_REQUEST_NOTIFIER_KEEP_ALIVE_TIME_SECONDS, TimeUnit.SECONDS,
+            readRequestHandlerQueue, new ThreadPoolExecutor.DiscardOldestPolicy());
+
     metrics.register(DataEventConstants.PER_NODE_DATA_SUBSCRIBERS_SIZE,
             (Gauge<Integer>) () -> perNodeDataHandlers.size());
     metrics.register(DataEventConstants.PER_NODE_DATA_SUBSCRIBERS_QUEUE_SIZE,
@@ -98,5 +118,28 @@ public class DataEventManager {
   public int getSharedDataSubscribersSize() {
     return sharedDataHandlers.size();
   }
+
+  public Object notifyReadRequest(final String key) {
+	  return readRequestEventHandler.doRead(key);
+  }
   
+  public void registerReadRequestSubscriber(ReadRequestEventHandler handler) {
+    readRequestEventHandler = handler;
+  }
+  
+  public void unregisterReadRequestSubscriber(ReadRequestEventHandler handler) {
+	readRequestEventHandler = null;
+  }
+
+  public boolean notifyWriteRequest(final String key, final Object value) {
+	return writeRequestEventHandler.doWrite(key, value);
+  }
+  
+  public void registerWriteRequestSubscriber(WriteRequestEventHandler handler) {
+    writeRequestEventHandler = handler;
+  }
+  
+  public void unregisterWriteRequestSubscriber(WriteRequestEventHandler handler) {
+	  writeRequestEventHandler = null;
+  }
 }

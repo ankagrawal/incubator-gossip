@@ -28,6 +28,7 @@ import org.apache.gossip.manager.GossipManager;
 import org.apache.gossip.model.Base;
 import org.apache.gossip.model.PerNodeDataMessage;
 import org.apache.gossip.model.SharedDataMessage;
+import org.apache.gossip.udp.UdpReadRequest;
 import org.apache.gossip.udp.UdpReadWriteResponse;
 import org.apache.gossip.udp.UdpWriteRequest;
 import org.apache.log4j.Logger;
@@ -47,20 +48,15 @@ public class WriteRequestHandler implements MessageHandler {
 	public boolean invoke(GossipCore gossipCore, GossipManager gossipManager,
 			Base base) {
 		UdpWriteRequest request = (UdpWriteRequest)base;
-		if(gossipCore.getSharedData().containsKey(request.getKey())) {
-			SharedDataMessage sharedDataMessage = new SharedDataMessage();
-			sharedDataMessage.setKey(request.getKey());
-			sharedDataMessage.setPayload(request.getValue());
-			gossipCore.getSharedData().put(request.getKey(), sharedDataMessage);
-			UdpReadWriteResponse rwResponse = new UdpReadWriteResponse();
-			rwResponse.setKey(request.getKey());
-			rwResponse.setValue(request.getValue());
-			URI uri = getUriFromId(request.getUriFrom(), gossipManager);
-			if(uri == null) {
-				LOGGER.error("Cant find a member with the id to send a response");
-			} else {
-			    gossipCore.sendOneWay(rwResponse, uri);
-			}
+		boolean written = gossipCore.doWrite(request.getKey(), request.getValue());
+		UdpReadWriteResponse rwResponse = new UdpReadWriteResponse();
+		rwResponse.setKey(request.getKey());
+		rwResponse.setValue(written);
+		URI uri = getUriFromId(request.getUriFrom(), gossipManager);
+		if(uri == null) {
+			LOGGER.error("Cant find a member with the id to send a response");
+		} else {
+		    gossipCore.sendOneWay(rwResponse, uri);
 		}
 		return true;
 	}

@@ -134,6 +134,14 @@ public class GossipCore implements GossipCoreConstants {
       eventManager.notifyPerNodeData(message.getNodeId(), message.getKey(), message.getPayload(), null);
     }
   }
+  
+  public Object doRead(String key) {
+	  return eventManager.notifyReadRequest(key);
+  }
+
+  public boolean doWrite(String key, Object value) {
+	  return eventManager.notifyWriteRequest(key, value);
+  }
 
   public ConcurrentHashMap<String, ConcurrentHashMap<String, PerNodeDataMessage>> getPerNodeData(){
     return perNodeData;

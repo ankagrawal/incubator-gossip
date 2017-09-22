@@ -38,5 +38,13 @@ public class DataEventConstants {
   public static final int SHARED_DATA_CORE_POOL_SIZE = 1;
   public static final int SHARED_DATA_MAX_POOL_SIZE = 30;
   public static final int SHARED_DATA_KEEP_ALIVE_TIME_SECONDS = 1;
+  public static final int READ_REQUEST_NOTIFIER_QUEUE_SIZE = 64;
+  public static final int READ_REQUEST_NOTIFIER_CORE_POOL_SIZE = 1;
+  public static final int READ_REQUEST_NOTIFIER_MAX_POOL_SIZE = 30;
+  public static final int READ_REQUEST_NOTIFIER_KEEP_ALIVE_TIME_SECONDS = 1;
+  public static final int WRITE_REQUEST_NOTIFIER_QUEUE_SIZE = 64;
+  public static final int WRITE_REQUEST_NOTIFIER_CORE_POOL_SIZE = 1;
+  public static final int WRITE_REQUEST_NOTIFIER_MAX_POOL_SIZE = 30;
+  public static final int WRITE_REQUEST_NOTIFIER_KEEP_ALIVE_TIME_SECONDS = 1;
   
 }
