@@ -38,18 +38,18 @@ public class NearestTargets implements OperationTargets {
 		this.numberOfReplicas = numberOfReplicas;
 	}
 
-	private List<LocalMember> getNNearestNodes(LocalMember me, List<LocalMember> living) {
+	private List<LocalMember> getNNearestNodes(LocalMember me, List<LocalMember> members) {
 		int n = numberOfReplicas;
 		Map<Double, LocalMember> map = new TreeMap<Double, LocalMember>();
 		List<LocalMember> nearestNodes = new ArrayList<LocalMember>();
-		for(int i = 0; i < living.size(); i++) {
-			Map<String, String> props = living.get(i).getProperties();
+		for(int i = 0; i < members.size(); i++) {
+			Map<String, String> props = members.get(i).getProperties();
 			double dx = Double.parseDouble(me.getProperties().get("latitude"))
 					    - Double.parseDouble(props.get("latitude"));
 			double dy = Double.parseDouble(me.getProperties().get("longitude"))
 					    - Double.parseDouble(props.get("longitude"));
 			double dist = Math.sqrt((dx * dx) + (dy * dy));
-			map.put(new Double(dist), living.get(i));
+			map.put(new Double(dist), members.get(i));
 		}
 		for(Map.Entry<Double,LocalMember> entry : map.entrySet()) {
 	        nearestNodes.add(entry.getValue());
@@ -92,7 +92,7 @@ public class NearestTargets implements OperationTargets {
 		if (!enoughValidNodes(membersWithCoordinates)) {
 			throw new RuntimeException("Not enough live nodes with longitude and latitude properties");
 		}
-		return getNNearestNodes(me, living);
+		return getNNearestNodes(me, membersWithCoordinates);
 	}
 
 }
