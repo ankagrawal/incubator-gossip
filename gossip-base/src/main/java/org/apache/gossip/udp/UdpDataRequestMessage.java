@@ -18,11 +18,16 @@
 
 package org.apache.gossip.udp;
 
-import org.apache.gossip.model.WriteRequestMessage;
+import org.apache.gossip.model.DataRequestMessage;
 
-public class UdpWriteRequest extends WriteRequestMessage implements Trackable {
+public class UdpDataRequestMessage extends DataRequestMessage implements Trackable {
+    
 	  private String uriFrom;
 	  private String uuid;
+	  
+	  public UdpDataRequestMessage() {
+		  
+	  }
 	  
 	  public String getUriFrom() {
 	    return uriFrom;
@@ -42,9 +47,9 @@ public class UdpWriteRequest extends WriteRequestMessage implements Trackable {
 
 	  @Override
 	  public String toString() {
-	    return "UdpWriteRequest [uriFrom=" + uriFrom + ", uuid=" + uuid +
-	    		", getKey()=" + getKey() + ", getValue()=" + getValue() +
-	    		", getTimestamp()=" + getTimestamp() +
-	    		", getExpireAt()=" + getExpireAt() + "]";
+	    return "UdpDataRequest [uriFrom=" + uriFrom + ", uuid=" + uuid +
+	    		", key=" + getKey() + ", timestamp=" + getTimestamp() +
+	    		", expireAt=" + getExpireAt() + ", value=" + getValue() +
+	    		", action" + getAction() + "]";
 	  }
 }

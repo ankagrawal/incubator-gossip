@@ -16,21 +16,21 @@
  * limitations under the License.
  */
 
-package org.apache.gossip.manager;
+package org.apache.gossip.consistency;
 
 import java.util.HashMap;
 import java.util.List;
 
-import org.apache.gossip.model.ReadWriteResponse;
+import org.apache.gossip.model.DataResponse;
 import org.apache.gossip.model.Response;
 
 public class MajorityResponseMerger implements ResponseMerger {
-    public Response merge(List<? extends Response> responses) {
+    public Object merge(List<? extends Response> responses) {
     	HashMap<Object, Integer> responseCount = new HashMap<Object, Integer>();
     	int majorityCount = 0;
     	Object majorityResult = null;
     	for(Response response : responses) {
-    		ReadWriteResponse r = (ReadWriteResponse) response;
+    		DataResponse r = (DataResponse) response;
     		if(responseCount.containsKey(r.getValue())) {
     			responseCount.put(r.getValue(), responseCount.get(r.getValue()) + 1);
     		} else {
@@ -38,9 +38,9 @@ public class MajorityResponseMerger implements ResponseMerger {
     		}
     		if(majorityCount < responseCount.get(r.getValue())) {
     			majorityCount = responseCount.get(r.getValue());
-    			majorityResult = r.getKey();
+    			majorityResult = r.getValue();
     		}
     	}
-    	return (Response)majorityResult;
+    return majorityResult;
     }
 }

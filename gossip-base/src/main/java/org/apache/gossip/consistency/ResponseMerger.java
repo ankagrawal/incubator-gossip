@@ -16,35 +16,12 @@
  * limitations under the License.
  */
 
-package org.apache.gossip.udp;
+package org.apache.gossip.consistency;
 
-import org.apache.gossip.model.ReadRequestMessage;
+import java.util.List;
 
-public class UdpReadRequest extends ReadRequestMessage implements Trackable {
-    
-	  private String uriFrom;
-	  private String uuid;
-	  
-	  public String getUriFrom() {
-	    return uriFrom;
-	  }
-	  
-	  public void setUriFrom(String uriFrom) {
-	    this.uriFrom = uriFrom;
-	  }
-	  
-	  public String getUuid() {
-	    return uuid;
-	  }
-	  
-	  public void setUuid(String uuid) {
-	    this.uuid = uuid;
-	  }
+import org.apache.gossip.model.Response;
 
-	  @Override
-	  public String toString() {
-	    return "UdpReadRequest [uriFrom=" + uriFrom + ", uuid=" + uuid +
-	    		", getKey()=" + getKey() + ", getTimestamp()=" + getTimestamp() +
-	    		", getExpireAt()=" + getExpireAt() + "]";
-	  }
+public interface ResponseMerger {
+	Object merge(List<? extends Response> responses);
 }

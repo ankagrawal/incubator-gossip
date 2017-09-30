@@ -15,9 +15,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.gossip.manager.handlers;
 
-package org.apache.gossip.event.data;
-
-public interface ReadRequestEventHandler {
-	public Object doRead(String key);
+public interface DataWriteHandler {
+	public boolean write(String key, Object value);
 }

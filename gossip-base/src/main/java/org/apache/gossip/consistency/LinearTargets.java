@@ -35,6 +35,7 @@ public class LinearTargets implements OperationTargets {
 
   @Override
   public List<LocalMember> generateTargets(String key, LocalMember me, List<LocalMember> living, List<LocalMember> dead) {
+	living = new ArrayList<>(living);
     if (numberOfReplicas > living.size() + 1) {
       throw new RuntimeException("Not enough live nodes");
     }

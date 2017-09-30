@@ -29,10 +29,12 @@ import org.apache.gossip.event.data.DataEventManager;
 import org.apache.gossip.event.data.UpdateNodeDataEventHandler;
 import org.apache.gossip.event.data.UpdateSharedDataEventHandler;
 import org.apache.gossip.model.Base;
+import org.apache.gossip.model.DataResponse;
 import org.apache.gossip.model.PerNodeDataMessage;
 import org.apache.gossip.model.Response;
 import org.apache.gossip.model.SharedDataMessage;
 import org.apache.gossip.udp.Trackable;
+import org.apache.gossip.udp.UdpDataResponse;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
@@ -134,14 +136,6 @@ public class GossipCore implements GossipCoreConstants {
       eventManager.notifyPerNodeData(message.getNodeId(), message.getKey(), message.getPayload(), null);
     }
   }
-  
-  public Object doRead(String key) {
-	  return eventManager.notifyReadRequest(key);
-  }
-
-  public boolean doWrite(String key, Object value) {
-	  return eventManager.notifyWriteRequest(key, value);
-  }
 
   public ConcurrentHashMap<String, ConcurrentHashMap<String, PerNodeDataMessage>> getPerNodeData(){
     return perNodeData;
@@ -228,6 +222,8 @@ public class GossipCore implements GossipCoreConstants {
    */
   public void sendOneWay(Base message, URI u) {
     try {
+    	  if(message.getClass() == DataResponse.class)
+    	      LOGGER.error("in sendoneway with message" + message.toString() + "for: " + u.toString());
       sendInternal(message, u);
     } catch (RuntimeException ex) {
       LOGGER.debug("Send one way failed", ex);
@@ -235,6 +231,10 @@ public class GossipCore implements GossipCoreConstants {
   }
 
   public void handleResponse(String k, Base v) {
+	if(v.getClass() == UdpDataResponse.class) {
+		System.out.println("In handleresponse with k " + k + "base " + v);
+		System.out.println("requests is " + requests.toString());
+	}
     LatchAndBase latch = requests.get(k);
     latch.base = v;
     latch.latch.countDown();

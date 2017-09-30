@@ -15,13 +15,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.gossip.manager.handlers;
 
-package org.apache.gossip.manager;
-
-import java.util.List;
-
-import org.apache.gossip.model.Response;
-
-public interface ResponseMerger {
-	Response merge(List<? extends Response> responses);
+public interface DataReadHandler {
+	public Object read(String key);
 }

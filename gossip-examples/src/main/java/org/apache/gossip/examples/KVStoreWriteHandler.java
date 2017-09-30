@@ -15,36 +15,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.gossip.examples;
 
-package org.apache.gossip.udp;
+import org.apache.gossip.manager.handlers.DataWriteHandler;
 
-import org.apache.gossip.model.ReadWriteResponse;
+public class KVStoreWriteHandler implements DataWriteHandler {
+	private final JsonBackedKVStore kvStore;
+	
+	public KVStoreWriteHandler(final JsonBackedKVStore kvStore) {
+		this.kvStore = kvStore;
+	}
 
-public class UdpReadWriteResponse extends ReadWriteResponse implements Trackable {
+	@Override
+	public boolean write(String key, Object value) {
+		kvStore.getKvStore().put(key, value);
+		return true;
+	}
 
-	  private String uriFrom;
-	  private String uuid;
-	  
-	  public String getUriFrom() {
-	    return uriFrom;
-	  }
-	  
-	  public void setUriFrom(String uriFrom) {
-	    this.uriFrom = uriFrom;
-	  }
-	  
-	  public String getUuid() {
-	    return uuid;
-	  }
-	  
-	  public void setUuid(String uuid) {
-	    this.uuid = uuid;
-	  }
-
-	  @Override
-	  public String toString() {
-	    return "UdpReadWriteResponse [uriFrom=" + uriFrom + ", uuid=" + uuid +
-	    		", getKey()=" + getKey() + ", getValue()=" + getValue() +
-	    		", getTimestamp()=" + getTimestamp() + ", getExpireAt()=" + getExpireAt() + "]";
-	  }
 }

@@ -16,16 +16,35 @@
  * limitations under the License.
  */
 
-package org.apache.gossip.model;
+package org.apache.gossip.udp;
 
-public class Request extends Message {
-    private RequestAction action;
+import org.apache.gossip.model.DataResponse;
 
-	public RequestAction getAction() {
-		return action;
-	}
+public class UdpDataResponse extends DataResponse implements Trackable {
 
-	public void setAction(RequestAction action) {
-		this.action = action;
-	}
+	  private String uriFrom;
+	  private String uuid;
+	  
+	  public String getUriFrom() {
+	    return uriFrom;
+	  }
+	  
+	  public void setUriFrom(String uriFrom) {
+	    this.uriFrom = uriFrom;
+	  }
+	  
+	  public String getUuid() {
+	    return uuid;
+	  }
+	  
+	  public void setUuid(String uuid) {
+	    this.uuid = uuid;
+	  }
+
+	  @Override
+	  public String toString() {
+	    return "UdpDataResponse [uriFrom=" + uriFrom + ", uuid=" + uuid +
+	    		", getKey()=" + getKey() + ", getValue()=" + getValue() +
+	    		", getTimestamp()=" + getTimestamp() + ", getExpireAt()=" + getExpireAt() + "]";
+	  }
 }

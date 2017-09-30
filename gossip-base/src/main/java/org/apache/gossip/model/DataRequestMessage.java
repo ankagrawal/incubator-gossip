@@ -18,41 +18,57 @@
 
 package org.apache.gossip.model;
 
-public class WriteRequestMessage extends Request {
-    private String key;
-    private Object value;
+public class DataRequestMessage extends Message {
+	private String key;
+	private Object value;
 	private Long timestamp;
 	private Long expireAt;
+    private RequestAction action;
 
-	public WriteRequestMessage(String key, Object value) {
-		this.key = key;
-		this.value = value;
+	public RequestAction getAction() {
+		return action;
 	}
-	
-	public WriteRequestMessage() { }
-	
+
+	public void setAction(RequestAction action) {
+		this.action = action;
+	}
+
 	public String getKey() {
 		return key;
 	}
+
 	public void setKey(String key) {
 		this.key = key;
 	}
-	public Object getValue() {
-		return value;
-	}
-	public void setValue(Object value) {
-		this.value = value;
-	}
+
 	public Long getTimestamp() {
 		return timestamp;
 	}
+
 	public void setTimestamp(Long timestamp) {
 		this.timestamp = timestamp;
 	}
+
 	public Long getExpireAt() {
 		return expireAt;
 	}
+
 	public void setExpireAt(Long expireAt) {
 		this.expireAt = expireAt;
+	}
+	
+	public Object getValue() {
+		return value;
+	}
+
+	public void setValue(Object value) {
+		this.value = value;
+	}
+
+	@Override
+	public String toString() {
+	    return "DataRequestMessage [, key=" + key + ", value=" + value
+	            + ", timestamp=" + timestamp + ", expireAt=" + expireAt
+	            + ", action=" + action +  "]";
 	}
 }

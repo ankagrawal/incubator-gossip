@@ -30,7 +30,7 @@ import org.apache.gossip.Member;
 import org.apache.gossip.consistency.Consistency;
 import org.apache.gossip.consistency.ConsistencyLevel;
 import org.apache.gossip.consistency.RemoteRequestCallable;
-import org.apache.gossip.model.Request;
+import org.apache.gossip.model.DataRequestMessage;
 import org.apache.gossip.model.Response;
 import org.apache.log4j.Logger;
 
@@ -51,13 +51,19 @@ public class Coordinator {
     private List<Response> handleAll(List<Future<Response>> futures,
     		ExecutorCompletionService<Response> ecs) {
     	List<Response> responses = new ArrayList<Response>();
+    	int i = 0;
+    	System.out.println("waiting for futures to arrive");
     	while(futures.size() > 0) {
     		try {
     			Future<Response> ft = ecs.take();
     		    responses.add(ft.get());
+    		    System.out.println(responses.get(i).toString());
+    		    i++;
     		    futures.remove(ft);
     		} catch(Exception ex) {
     			cancelAll(futures);
+    			LOGGER.error(ex.getStackTrace().toString());
+    			LOGGER.error(ex.toString());
     			LOGGER.error("One of the nodes failed to return result");
     			LOGGER.error("Unable to satisfy consistency requirement ALL for this request");
     			return null;
@@ -82,6 +88,8 @@ public class Coordinator {
     			if(allowedFailures < 0)
     			{
     				cancelAll(futures);
+        			LOGGER.error(ex.getStackTrace().toString());
+        			LOGGER.error(ex.toString());
     				LOGGER.error("Not enough results available to support consistency level N with value"
     			                 + Integer.toString((Integer)con.getParameters().get("n")));
     				return null;
@@ -93,31 +101,37 @@ public class Coordinator {
     }
     
     private List<Response> handleAny(List<Future<Response>> futures,
-    		ExecutorCompletionService<Response> ecs) {
-    	int futureSize = futures.size();
-    	List<Response> responses = new ArrayList<Response>();
-    	while(futureSize > 0){
+    			ExecutorCompletionService<Response> ecs) {
+	    	int futureSize = futures.size();
+	    	List<Response> responses = new ArrayList<Response>();
+	    	while(futureSize > 0){
 			try {
 			    responses.add(ecs.take().get());
 			    break;
 			} catch(Exception ex) {
 			}
 			futureSize--;
-    	}
+	    	}
 	    cancelAll(futures);
 		if(responses.size() == 0) {
 		    LOGGER.error("Couldnt get enough responses to satisfy consistency requirement ANY");
 		    return null;
 		}
-    	return responses;
+	    	return responses;
     }
     
-    public List<Response> coordinateRequest(List<? extends Member> members, Request request,
-    		Consistency con, LocalMember me, GossipCore gossipCore) {
+    public List<Response> coordinateRequest(List<? extends Member> members, DataRequestMessage request,
+    		Consistency con, LocalMember me, final GossipCore gossipCore) {
     	ExecutorCompletionService<Response> ecs = new ExecutorCompletionService<Response>(executor);
     	List<Future<Response>> futures = new ArrayList<Future<Response>>();
+    	System.out.println("going to iterate through members");
     	for(Member member : members) {
-    		RemoteRequestCallable remoteRequest = new RemoteRequestCallable(request, member, me, gossipCore);
+    		if(member.getId() == me.getId()) {
+    			System.out.println("this is just me");
+    			continue;
+    		}
+    		System.out.println("creating one request");
+    		RemoteRequestCallable remoteRequest = new RemoteRequestCallable(request, me, member, gossipCore);
     		futures.add(ecs.submit(remoteRequest));
     	}
     	if(con.getLevel() == ConsistencyLevel.ALL)

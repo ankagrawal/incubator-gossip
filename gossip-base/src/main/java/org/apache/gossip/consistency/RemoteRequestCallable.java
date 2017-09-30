@@ -24,26 +24,33 @@ import java.util.concurrent.Callable;
 import org.apache.gossip.LocalMember;
 import org.apache.gossip.Member;
 import org.apache.gossip.manager.GossipCore;
-import org.apache.gossip.model.Request;
+import org.apache.gossip.model.DataRequestMessage;
 import org.apache.gossip.model.Response;
-import org.apache.gossip.udp.UdpReadRequest;
+import org.apache.gossip.udp.UdpDataRequestMessage;
 
 public class RemoteRequestCallable implements Callable<Response> {
-	Request request;
-	LocalMember to;
+	DataRequestMessage request;
+	Member to;
 	LocalMember from;
 	GossipCore gossipCore;
     
-	public RemoteRequestCallable(Request request, Member from, LocalMember to, GossipCore gossipCore) {
+	public RemoteRequestCallable(DataRequestMessage request, LocalMember from, Member to, GossipCore gossipCore) {
 		this.request = request;
+		this.from = from;
 		this.to = to;
 		this.gossipCore = gossipCore;
 	}
 	
 	public Response call() {
-		UdpReadRequest udpRequest = (UdpReadRequest)request;
+		UdpDataRequestMessage udpRequest = new UdpDataRequestMessage();
+		udpRequest.setAction(request.getAction());
+		udpRequest.setExpireAt(request.getExpireAt());
+		udpRequest.setKey(request.getKey());
+		udpRequest.setValue(request.getValue());
+		udpRequest.setTimestamp(request.getTimestamp());
 		udpRequest.setUriFrom(from.getId());
 		udpRequest.setUuid(UUID.randomUUID().toString());
+		udpRequest.setAction(request.getAction());
 		Response r = gossipCore.send(udpRequest, to.getUri());
 		return r;
 	}

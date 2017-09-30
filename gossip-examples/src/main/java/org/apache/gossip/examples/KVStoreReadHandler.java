@@ -15,37 +15,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.gossip.examples;
 
-package org.apache.gossip.model;
+import org.apache.gossip.manager.handlers.DataReadHandler;
 
-public class ReadWriteResponse extends Response {
-	private String key;
-	private Object value;
-	private Long timestamp;
-	private Long expireAt;
-	
-	public String getKey() {
-		return key;
+public class KVStoreReadHandler implements DataReadHandler {
+	private final JsonBackedKVStore kvStore;
+
+	public KVStoreReadHandler(JsonBackedKVStore kvStore) {
+		this.kvStore = kvStore;
 	}
-	public void setKey(String key) {
-		this.key = key;
+
+	@Override
+	public Object read(String key) {
+		if(kvStore.getKvStore().containsKey(key))
+			return kvStore.getKvStore().get(key);
+		return null;
 	}
-	public Object getValue() {
-		return value;
-	}
-	public void setValue(Object value) {
-		this.value = value;
-	}
-	public Long getTimestamp() {
-		return timestamp;
-	}
-	public void setTimestamp(Long timestamp) {
-		this.timestamp = timestamp;
-	}
-	public Long getExpireAt() {
-		return expireAt;
-	}
-	public void setExpireAt(Long expireAt) {
-		this.expireAt = expireAt;
-	}
+
 }

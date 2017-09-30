@@ -15,9 +15,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.gossip.examples;
 
-package org.apache.gossip.event.data;
+import java.util.HashMap;
 
-public interface WriteRequestEventHandler {
-	public boolean doWrite(String key, Object value);
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+public class DataBackup implements Runnable {
+	private final JsonBackedKVStore kvStore;
+	
+	public DataBackup(JsonBackedKVStore kvStore) {
+		this.kvStore = kvStore;
+	}
+	
+	public void run() {
+		ObjectMapper mapper = new ObjectMapper();
+		try {
+			String content = mapper.writeValueAsString(kvStore.getKvStore());
+			File f = new File(kvStore.getFileName());
+			f.write(content);
+		} catch (JsonProcessingException e) {
+			e.printStackTrace();
+		}
+	}
 }
