@@ -39,7 +39,6 @@ public class NearestTargets implements OperationTargets {
 	}
 
 	private List<LocalMember> getNNearestNodes(LocalMember me, List<LocalMember> members) {
-		int n = numberOfReplicas;
 		Map<Double, LocalMember> map = new TreeMap<Double, LocalMember>();
 		List<LocalMember> nearestNodes = new ArrayList<LocalMember>();
 		for(int i = 0; i < members.size(); i++) {
@@ -51,11 +50,12 @@ public class NearestTargets implements OperationTargets {
 			double dist = Math.sqrt((dx * dx) + (dy * dy));
 			map.put(new Double(dist), members.get(i));
 		}
+		int n = numberOfReplicas;
 		for(Map.Entry<Double,LocalMember> entry : map.entrySet()) {
 	        nearestNodes.add(entry.getValue());
 	        n--;
 	        if (n == 0) {
-	        	break;
+	        		break;
 	        }
 	    }
 		return nearestNodes;

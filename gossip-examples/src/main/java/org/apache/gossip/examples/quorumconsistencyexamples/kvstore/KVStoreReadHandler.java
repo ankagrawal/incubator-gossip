@@ -15,21 +15,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gossip.examples;
+package org.apache.gossip.examples.quorumconsistencyexamples.kvstore;
 
-import org.apache.gossip.manager.handlers.DataWriteHandler;
+import org.apache.gossip.manager.handlers.DataReadHandler;
 
-public class KVStoreWriteHandler implements DataWriteHandler {
+public class KVStoreReadHandler implements DataReadHandler {
 	private final JsonBackedKVStore kvStore;
-	
-	public KVStoreWriteHandler(final JsonBackedKVStore kvStore) {
+
+	public KVStoreReadHandler(JsonBackedKVStore kvStore) {
 		this.kvStore = kvStore;
 	}
 
 	@Override
-	public boolean write(String key, Object value) {
-		kvStore.getKvStore().put(key, value);
-		return true;
+	public Object read(String key) {
+		if(kvStore.getKvStore().containsKey(key))
+			return kvStore.getKvStore().get(key);
+		return null;
 	}
 
 }

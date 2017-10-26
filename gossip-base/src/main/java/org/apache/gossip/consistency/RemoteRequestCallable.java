@@ -24,11 +24,15 @@ import java.util.concurrent.Callable;
 import org.apache.gossip.LocalMember;
 import org.apache.gossip.Member;
 import org.apache.gossip.manager.GossipCore;
+import org.apache.gossip.manager.GossipManager;
 import org.apache.gossip.model.DataRequestMessage;
+import org.apache.gossip.model.RequestAction;
 import org.apache.gossip.model.Response;
 import org.apache.gossip.udp.UdpDataRequestMessage;
+import org.apache.log4j.Logger;
 
 public class RemoteRequestCallable implements Callable<Response> {
+	public static final Logger LOGGER = Logger.getLogger(RemoteRequestCallable.class);
 	DataRequestMessage request;
 	Member to;
 	LocalMember from;

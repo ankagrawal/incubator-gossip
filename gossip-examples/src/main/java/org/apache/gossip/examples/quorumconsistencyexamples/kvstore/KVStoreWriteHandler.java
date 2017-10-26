@@ -15,28 +15,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gossip.examples;
+package org.apache.gossip.examples.quorumconsistencyexamples.kvstore;
 
-import java.util.HashMap;
+import org.apache.gossip.manager.handlers.DataWriteHandler;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-public class DataBackup implements Runnable {
+public class KVStoreWriteHandler implements DataWriteHandler {
 	private final JsonBackedKVStore kvStore;
 	
-	public DataBackup(JsonBackedKVStore kvStore) {
+	public KVStoreWriteHandler(final JsonBackedKVStore kvStore) {
 		this.kvStore = kvStore;
 	}
-	
-	public void run() {
-		ObjectMapper mapper = new ObjectMapper();
-		try {
-			String content = mapper.writeValueAsString(kvStore.getKvStore());
-			File f = new File(kvStore.getFileName());
-			f.write(content);
-		} catch (JsonProcessingException e) {
-			e.printStackTrace();
-		}
+
+	@Override
+	public boolean write(String key, Object value) {
+		kvStore.getKvStore().put(key, value);
+		return true;
 	}
+
 }

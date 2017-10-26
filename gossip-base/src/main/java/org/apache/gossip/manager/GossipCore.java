@@ -231,10 +231,6 @@ public class GossipCore implements GossipCoreConstants {
   }
 
   public void handleResponse(String k, Base v) {
-	if(v.getClass() == UdpDataResponse.class) {
-		System.out.println("In handleresponse with k " + k + "base " + v);
-		System.out.println("requests is " + requests.toString());
-	}
     LatchAndBase latch = requests.get(k);
     latch.base = v;
     latch.latch.countDown();

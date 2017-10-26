@@ -59,7 +59,7 @@ public class DataRequestMessageHandler implements MessageHandler {
 		}
 		return null;
 	}
-	
+
 	public boolean invoke(GossipCore gossipCore, GossipManager gossipManager,
 			Base base) {
 		if(gossipManager.getDataReadHandler() == null) {
@@ -77,7 +77,8 @@ public class DataRequestMessageHandler implements MessageHandler {
 	}
 	
 	private void onRead(UdpDataRequestMessage request, GossipCore gossipCore, GossipManager gossipManager) {
-		LOGGER.error("received read message" + request.toString());
+		if(LOGGER.isDebugEnabled())
+			LOGGER.debug("received read message" + request.toString());
 		Object value = gossipManager.getDataReadHandler().read(request.getKey());
 		UdpDataResponse rwResponse = new UdpDataResponse();
 		rwResponse.setKey(request.getKey());
@@ -85,7 +86,6 @@ public class DataRequestMessageHandler implements MessageHandler {
 		rwResponse.setUuid(request.getUuid());
 		rwResponse.setUriFrom(request.getUriFrom());
 		URI uri = getUriFromId(request.getUriFrom(), gossipManager);
-		LOGGER.error("Response " + rwResponse.toString());
 		if(uri == null) {
 			LOGGER.error("Cant find a member with the id to send a response");
 		} else {
@@ -95,7 +95,8 @@ public class DataRequestMessageHandler implements MessageHandler {
 	}
 	
 	private void onWrite(UdpDataRequestMessage request, GossipCore gossipCore, GossipManager gossipManager) {
-		LOGGER.error("received read message" + request.toString());
+		if(LOGGER.isDebugEnabled())
+			LOGGER.debug("received read message" + request.toString());
 		boolean written = gossipManager.getDataWriteHandler().write(request.getKey(), request.getValue());
 		UdpDataResponse rwResponse = new UdpDataResponse();
 		rwResponse.setKey(request.getKey());
@@ -103,7 +104,6 @@ public class DataRequestMessageHandler implements MessageHandler {
 		rwResponse.setUuid(request.getUuid());
 		rwResponse.setUriFrom(request.getUriFrom());
 		URI uri = getUriFromId(request.getUriFrom(), gossipManager);
-		LOGGER.error("WriteResponse " + rwResponse.toString());
 		if(uri == null) {
 			LOGGER.error("Cant find a member with the id to send a response");
 		} else {

@@ -402,7 +402,7 @@ public abstract class GossipManager {
 	  DataRequestMessage readRequestMessage = new DataRequestMessage();
 	  readRequestMessage.setKey(key);
 	  readRequestMessage.setAction(RequestAction.READ);
-	  List<Response> responses = coordinator.coordinateRequest(members, readRequestMessage, con, me, gossipCore);
+	  List<Response> responses = coordinator.coordinateRequest(members, readRequestMessage, con, me, gossipCore, this);
 	  return merger.merge(responses);
   }
   
@@ -412,7 +412,7 @@ public abstract class GossipManager {
 	  writeRequestMessage.setKey(key);
 	  writeRequestMessage.setValue(value);
 	  writeRequestMessage.setAction(RequestAction.WRITE);
-	  List<Response> responses = coordinator.coordinateRequest(members, writeRequestMessage, con, me, gossipCore);
+	  List<Response> responses = coordinator.coordinateRequest(members, writeRequestMessage, con, me, gossipCore, this);
 	  String iswritten = merger.merge(responses).toString();
 	  return Boolean.getBoolean(iswritten);
   }

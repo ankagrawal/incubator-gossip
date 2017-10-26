@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gossip.examples;
+package org.apache.gossip.examples.quorumconsistencyexamples;
 
 import java.io.IOException;
 
@@ -23,10 +23,15 @@ import org.apache.gossip.consistency.Consistency;
 import org.apache.gossip.consistency.ConsistencyLevel;
 import org.apache.gossip.consistency.LinearTargets;
 import org.apache.gossip.consistency.MajorityResponseMerger;
-import org.apache.gossip.consistency.NearestTargets;
 import org.apache.gossip.consistency.OperationTargets;
 import org.apache.gossip.consistency.ResponseMerger;
+import org.apache.gossip.examples.StandAloneExampleBase;
+import org.apache.gossip.examples.quorumconsistencyexamples.kvstore.JsonBackedKVStore;
+import org.apache.gossip.examples.quorumconsistencyexamples.kvstore.KVStoreReadHandler;
+import org.apache.gossip.examples.quorumconsistencyexamples.kvstore.KVStoreWriteHandler;
 import org.apache.gossip.manager.GossipManager;
+
+//mvn exec:java -Dexec.mainClass=org.apache.gossip.examples.StandAloneReadWriteExampleNode -Dexec.args="udp://localhost:10005 5 udp://localhost:10000 0 --file ../../1.json"
 
 public class StandAloneReadWriteExampleNode extends StandAloneExampleBase {
 	private static boolean WILL_READ = false;
@@ -71,23 +76,26 @@ public class StandAloneReadWriteExampleNode extends StandAloneExampleBase {
 	}
 
 	public void testReadWrite(GossipManager gossipManager) {
-		OperationTargets targets = new LinearTargets(2);
+		OperationTargets targets = new LinearTargets(4);
 		Consistency con = new Consistency(ConsistencyLevel.N, null);
-		con.addParameter("n", new Integer(1));
+		con.addParameter("n", new Integer(4));
 		ResponseMerger merger = new MajorityResponseMerger();
-		System.out.println("DOING READ NOW");
+		System.out.println("Doing first read");
 		Object o = gossipManager.read("a", targets, con, merger);
-		System.out.println("RECIEVED READ DATA" + o.toString());
+		System.out.println("Recieved read data" + o.toString());
+		System.out.println("Doing write");
 		gossipManager.write("a", 99, targets, con, merger);
-		System.out.println("DATA IS WRITTEN");
+		System.out.println("Data is written");
+		System.out.println("Doing read of written data");
 		Object o1 = gossipManager.read("a", targets, con, merger);
-		System.out.println("RECIEVED READ DATA" + o1.toString());
-		System.out.println(o1.toString());
+		System.out.println("Recieved read data" + o1.toString());
 		Integer i1 = (Integer)o;
 		Integer i2 = (Integer)o1;
 		if(i1 ==i2) {
+			System.out.println("Read and written data are equal");
 			System.out.println("Test successful!");
 		} else {
+			System.out.println("Read and written data are not equal" + i1 + " " + i2);
 			System.out.println("Test failed!");
 		}
 	}
@@ -99,14 +107,13 @@ public class StandAloneReadWriteExampleNode extends StandAloneExampleBase {
 		GossipManager gossipManager = this.getGossipManager();
 		gossipManager.registerDataReadHandler(readHandler);
 		gossipManager.registerDataWriteHandler(writeHandler);
-		while(gossipManager.getLiveMembers().size() < 1) {
+		while(gossipManager.getLiveMembers().size() < 5) {
 			try {
 				Thread.sleep(5000);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
 		}
-		System.out.println("id is" + id);
 		if(!id.equals("1")) {
 			for(;;) {
 				try {
@@ -123,6 +130,6 @@ public class StandAloneReadWriteExampleNode extends StandAloneExampleBase {
 	}
 
 	@Override
-	void printValues(GossipManager gossipService) {
+	protected void printValues(GossipManager gossipService) {
 	}
 }

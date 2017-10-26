@@ -15,10 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gossip.examples;
+package org.apache.gossip.examples.quorumconsistencyexamples.kvstore;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -68,7 +67,6 @@ public class JsonBackedKVStore {
 			e.printStackTrace();
 		}
 		DataBackup backup = new DataBackup(this);
-		System.out.println(kvStore.toString());
 		scheduledService = Executors.newScheduledThreadPool(1);
 		scheduledService.scheduleAtFixedRate(backup, 5, 5, TimeUnit.SECONDS);
 	}

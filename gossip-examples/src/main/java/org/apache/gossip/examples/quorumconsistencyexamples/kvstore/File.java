@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gossip.examples;
+package org.apache.gossip.examples.quorumconsistencyexamples.kvstore;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -64,7 +64,6 @@ public class File {
 			try {
 				bw.close();
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
